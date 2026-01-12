@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/BlogPost.astro';
-// 👇 关键修复：必须把图片“引用”进来，不能直接写路径
+// 👇 确保这一行在：把图片引进来
 import aboutImg from '../assets/blog-placeholder-about.jpg';
 ---
 
@@ -39,6 +39,5 @@ import aboutImg from '../assets/blog-placeholder-about.jpg';
 	</p>
 	<ul>
 		<li><strong>Email:</strong> xieyishun@126.com</li>
-		<li><strong>LinkedIn:</strong> (这里可以填你的领英链接)</li>
 	</ul>
 </Layout>
