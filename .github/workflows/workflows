@@ -1,0 +1,37 @@
+name: Deploy to GitHub Pages
+
+on:
+  # 每次推送到 main 分支时自动触发部署
+  push:
+    branches: [ main ]
+  # 允许你手动在 GitHub 页面点击触发
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your repository using git
+        uses: actions/checkout@v4
+      
+      # 安装包管理器并构建网站
+      - name: Install, build, and upload your site
+        uses: withastro/action@v2
+        # with:
+          # path: . # 如果你的 astro 项目不在根目录，改这里
+          # package-manager: pnpm # 如果你不用 npm，改这里
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
