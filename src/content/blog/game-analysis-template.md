@@ -1,5 +1,5 @@
 ---
-title: '【游戏拆解】这里写游戏名字：核心玩法与经济系统分析'
+title: '【游戏拆解】知识个模板'
 description: '从数据表现、核心循环到商业化设计的深度拆解。'
 pubDate: '2026-01-12'
 tags: ['Game Deconstruction', 'Strategy', 'Economy']
