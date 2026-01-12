@@ -1,14 +1,16 @@
 ---
 import Layout from '../layouts/BlogPost.astro';
+// 👇 修复 1: 在这里引用图片文件
+import aboutImg from '../assets/blog-placeholder-about.jpg';
 ---
 
 <Layout
 	title="关于我 | About Me"
 	description="Xie Yi - Hult Business Data Analysis Student"
 	pubDate={new Date('2026-01-12')}
-	heroImage="/my-website/blog-placeholder-about.jpg"
+	heroImage={aboutImg} 
 >
-	<p>
+<p>
 		👋 <strong>你好！我是刀刀。</strong>
 	</p>
 
@@ -36,6 +38,7 @@ import Layout from '../layouts/BlogPost.astro';
 		如果你对我的文章感兴趣，或者有合作机会，欢迎联系我！
 	</p>
 	<ul>
-		<li><strong>Email:xieyishun@126.com</strong> </li>
+		<li><strong>Email:</strong> xieyishun@126.com</li>
+		<li><strong>LinkedIn:</strong> (这里可以填你的领英链接)</li>
 	</ul>
 </Layout>
