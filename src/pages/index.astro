@@ -1,11 +1,41 @@
----
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
----
-
 <Layout>
-    <h1>你好，我的第一个网站！</h1>
+    <div class="container">
+        <h1>👋 你好，我是刀刀 (DaoDao)</h1>
+        
+        <p>
+            欢迎来到我的个人主页！<br>
+        </p>
+
+        <p>
+            我喜欢探索数据背后的故事，也对游戏行业充满热情。
+            接下来会在这分享我对运营的分析。
+        </p>
+
+        <nav>
+            <a href="/">首页</a> | 
+            <a href="/about">关于我</a>
+        </nav>
+    </div>
 </Layout>
+
+<style>
+    /* 下面是简单的 CSS 样式，负责让页面变好看 */
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        font-family: sans-serif;
+        line-height: 1.6;
+    }
+    h1 {
+        color: #2d3748;
+    }
+    a {
+        color: #3182ce;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+</style>
