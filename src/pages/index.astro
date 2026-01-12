@@ -1,47 +1,42 @@
 ---
 import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 	</head>
 	<body>
 		<Header />
 		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
+			<h1>🎮 游戏运营与拆解</h1>
+			
 			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
+				你好！我是 <strong>刀刀</strong>
+				<br>
+				目前在攻读商业数据分析硕士。
 			</p>
+		
 			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
+				这个网站是我的个人知识库，主要用于分享和记录：
 			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
+		
 			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
+				<li>🧩 <strong>游戏拆解 (Game Deconstruction):</strong> 分析热门游戏的玩法循环与经济系统。</li>
+				<li>📈 <strong>游戏运营 (Game Operations):</strong> 探讨用户留存、活动设计与商业化策略。</li>
+				<li>📊 <strong>数据分析 (Data Analysis):</strong> 使用 SQL/Python/Tableau 解决业务问题。</li>
 			</ul>
+		
 			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
+				希望能通过这些记录，用数据的视角去解构游戏业务。
 			</p>
+		
 			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
+				欢迎阅读我的 <a href="/my-website/blog">最新文章</a>，或者在 <a href="/my-website/about">关于我</a> 页面了解更多。
 			</p>
 		</main>
 		<Footer />
