@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/BlogPost.astro';
-// 👇 修复 1: 在这里引用图片文件
+// 👇 关键修复：必须把图片“引用”进来，不能直接写路径
 import aboutImg from '../assets/blog-placeholder-about.jpg';
 ---
 
@@ -8,7 +8,7 @@ import aboutImg from '../assets/blog-placeholder-about.jpg';
 	title="关于我 | About Me"
 	description="Xie Yi - Hult Business Data Analysis Student"
 	pubDate={new Date('2026-01-12')}
-	heroImage={aboutImg} 
+	heroImage={aboutImg}
 >
 <p>
 		👋 <strong>你好！我是刀刀。</strong>
