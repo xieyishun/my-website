@@ -1,10 +1,8 @@
 name: Deploy to GitHub Pages
 
 on:
-  # 触发条件：推送到 main 分支
   push:
     branches: [ main ]
-  # 允许手动触发
   workflow_dispatch:
 
 permissions:
@@ -21,9 +19,6 @@ jobs:
       
       - name: Install, build, and upload your site
         uses: withastro/action@v2
-        # with:
-          # path: . 
-          # package-manager: pnpm
 
   deploy:
     needs: build
