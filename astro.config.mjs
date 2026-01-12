@@ -1,10 +1,9 @@
-// @ts-check
 import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
+import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
-  // 1. 你的 GitHub 主页地址
-  site: 'https://xieyishun.github.io', 
-  
-  // 2. 你的仓库名（必须以斜杠开头）
+  site: 'https://xieyishun.github.io',
   base: '/my-website', 
+  integrations: [mdx(), sitemap()],
 });
