@@ -98,7 +98,7 @@ const posts = (await getCollection('blog')).sort(
 							return (
 								<li>
 									{/* 👇 关键修复：手动拼接路径，确保中间有斜杠 / */}
-									<a href={`/my-website/ blog/${slug}/`}>
+									<a href={`/my-website/blog/${slug}/`}>
 										{post.data.heroImage && (
 											<Image width={720} height={360} src={post.data.heroImage} alt="" />
 										)}
