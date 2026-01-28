@@ -1,0 +1,188 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
+
+export async function getStaticPaths() {
+  const allPosts = await getCollection('blog');
+  
+  // 收集所有唯一的标签
+  const tags = new Set<string>();
+  allPosts.forEach(post => {
+    if (post.data.tags) {
+      post.data.tags.forEach(tag => {
+        tags.add(tag);
+      });
+    }
+  });
+
+  // 为每个标签创建路径
+  return Array.from(tags).map(tag => ({
+    params: { tag: tag },
+    props: { 
+      tag,
+      posts: allPosts.filter(post => post.data.tags?.includes(tag))
+    }
+  }));
+}
+
+interface Props {
+  tag: string;
+  posts: any[];
+}
+
+const { tag, posts } = Astro.props;
+
+// 按日期排序文章
+const sortedPosts = posts.sort((a, b) => 
+  new Date(b.data.pubDate).getTime() - new Date(a.data.pubDate).getTime()
+);
+---
+
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <BaseHead title={`标签: ${tag} | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+    <style>
+      main {
+        width: 960px;
+      }
+      .tag-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid #e0e0e0;
+      }
+      .tag-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+      .tag-description {
+        color: #666;
+        font-size: 1.1rem;
+      }
+      .posts-list {
+        list-style: none;
+        padding: 0;
+      }
+      .post-item {
+        padding: 1rem 0;
+        border-bottom: 1px solid #e0e0e0;
+      }
+      .post-item:last-child {
+        border-bottom: none;
+      }
+      .post-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      .post-title a {
+        text-decoration: none;
+        color: inherit;
+      }
+      .post-title a:hover {
+        color: #0066cc;
+      }
+      .post-meta {
+        display: flex;
+        gap: 1rem;
+        color: #666;
+        font-size: 0.9rem;
+      }
+      .post-description {
+        margin-top: 0.5rem;
+        color: #555;
+      }
+      .post-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+      .post-tag {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        text-decoration: none;
+        color: #333;
+        transition: background-color 0.2s;
+      }
+      .post-tag:hover {
+        background-color: #e0e0e0;
+      }
+      .post-tag.current {
+        background-color: #0066cc;
+        color: white;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+      }
+      .back-link {
+        display: inline-block;
+        margin-bottom: 1rem;
+        color: #0066cc;
+        text-decoration: none;
+      }
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <Header />
+    <main>
+      <a href="/my-website/tags/" class="back-link">← 返回所有标签</a>
+      
+      <div class="tag-header">
+        <h1 class="tag-title">🏷️ {tag}</h1>
+        <p class="tag-description">共 {sortedPosts.length} 篇文章</p>
+      </div>
+
+      {sortedPosts.length > 0 ? (
+        <ul class="posts-list">
+          {sortedPosts.map(post => (
+            <li class="post-item">
+              <h2 class="post-title">
+                <a href={`/my-website/blog/${post.slug}/`}>{post.data.title}</a>
+              </h2>
+              <div class="post-meta">
+                <span><FormattedDate date={post.data.pubDate} /></span>
+                {post.data.updatedDate && (
+                  <span>更新于 <FormattedDate date={post.data.updatedDate} /></span>
+                )}
+              </div>
+              {post.data.description && (
+                <p class="post-description">{post.data.description}</p>
+              )}
+              {post.data.tags && post.data.tags.length > 0 && (
+                <div class="post-tags">
+                  {post.data.tags.map(t => (
+                    <a 
+                      href={`/my-website/tags/${encodeURIComponent(t)}/`}
+                      class={`post-tag ${t === tag ? 'current' : ''}`}
+                    >
+                      {t}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div class="empty-state">
+          <p>此标签下暂无文章</p>
+        </div>
+      )}
+    </main>
+    <Footer />
+  </body>
+</html>
