@@ -4,6 +4,7 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
+import { withBase } from '../../utils/url';
 
 const allPosts = await getCollection('blog');
 
@@ -23,9 +24,6 @@ const tags = Array.from(tagMap.entries())
   .map(([name, count]) => ({ name, count }))
   .sort((a, b) => b.count - a.count);
 
-const baseUrl = import.meta.env.BASE_URL.endsWith('/')
-  ? import.meta.env.BASE_URL
-  : `${import.meta.env.BASE_URL}/`;
 ---
 
 <!doctype html>
@@ -79,7 +77,7 @@ const baseUrl = import.meta.env.BASE_URL.endsWith('/')
       {tags.length > 0 ? (
         <div class="tags-grid">
           {tags.map(tag => (
-            <a href={`${baseUrl}tags/${encodeURIComponent(tag.name)}/`} class="tag-card">
+            <a href={withBase(`tags/${encodeURIComponent(tag.name)}/`)} class="tag-card">
               <div class="tag-name">{tag.name}</div>
               <div class="tag-count">{tag.count} 篇文章</div>
             </a>

@@ -5,6 +5,7 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import PostCard from '../../components/PostCard.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
+import { withBase } from '../../utils/url';
 
 export async function getStaticPaths() {
 	const allPosts = await getCollection('blog');
@@ -40,9 +41,6 @@ const sortedPosts = posts.sort(
 	(a, b) => new Date(b.data.pubDate).getTime() - new Date(a.data.pubDate).getTime(),
 );
 
-const baseUrl = import.meta.env.BASE_URL.endsWith('/')
-	? import.meta.env.BASE_URL
-	: `${import.meta.env.BASE_URL}/`;
 ---
 
 <!doctype html>
@@ -140,7 +138,7 @@ const baseUrl = import.meta.env.BASE_URL.endsWith('/')
 	<body>
 		<Header />
 		<main>
-			<a href={`${baseUrl}series/`} class="back-link">← 返回所有专题</a>
+			<a href={withBase('series/')} class="back-link">← 返回所有专题</a>
 
 			<div class="series-header">
 				<h1 class="series-title">📘 {seriesName}</h1>
@@ -162,6 +160,11 @@ const baseUrl = import.meta.env.BASE_URL.endsWith('/')
 		<Footer />
 	</body>
 </html>
+
+
+
+
+
 
 
 

@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import FormattedDate from './FormattedDate.astro';
+import { withBase } from '../utils/url';
 
 const {
 	post,
@@ -10,15 +11,19 @@ const {
 	currentTag = '',
 } = Astro.props;
 
-const baseUrl = import.meta.env.BASE_URL.endsWith('/')
-	? import.meta.env.BASE_URL
-	: `${import.meta.env.BASE_URL}/`;
 const slug = post.slug || post.id.replace(/\.mdx?$/, '');
-const href = `${baseUrl}blog/${slug}/`;
+const href = withBase(`blog/${slug}/`);
 const summary = (post.data.summary ?? '').trim();
+const typeValue = typeof post.data.type === 'string' ? post.data.type : '';
+const typeLabelMap = {
+	note: 'Note',
+	analysis: 'Analysis',
+	report: 'Report',
+};
+const typeLabel = typeLabelMap[typeValue as keyof typeof typeLabelMap] ?? '';
 const game = (post.data.game ?? '').trim();
-const regions = post.data.region ?? [];
-const tags = post.data.tags ?? [];
+const regions = Array.isArray(post.data.region) ? post.data.region : [];
+const tags = Array.isArray(post.data.tags) ? post.data.tags : [];
 ---
 
 <li class="post-item">
@@ -37,17 +42,32 @@ const tags = post.data.tags ?? [];
 						更新于 <FormattedDate date={post.data.updatedDate} />
 					</span>
 				)}
-				{post.data.type && <span class="post-tag">{post.data.type}</span>}
-				{game && <span class="post-tag">{game}</span>}
+			</div>
+			<div class="post-badges">
+				{typeLabel && <span class="post-badge">{typeLabel}</span>}
+				{game && <span class="post-badge">{game}</span>}
+				{regions.map((region, index) => (
+					<span class="post-badge" data-kind="region" data-value={region} key={index}>
+						{region}
+					</span>
+				))}
+				{showTags &&
+					tags.map((tag) => (
+						<a
+							href={withBase(`tags/${encodeURIComponent(tag)}/`)}
+							class={[
+								'post-badge',
+								'post-badge-link',
+								tag === currentTag ? 'current' : '',
+							]
+								.filter(Boolean)
+								.join(' ')}
+						>
+							{tag}
+						</a>
+					))}
 			</div>
 			{summary && <p class="post-description">{summary}</p>}
-			{regions.length > 0 && (
-				<div class="post-tags post-regions">
-					{regions.map((region) => (
-						<span class="post-tag">{region}</span>
-					))}
-				</div>
-			)}
 		</a>
 	) : (
 		<>
@@ -66,29 +86,64 @@ const tags = post.data.tags ?? [];
 						更新于 <FormattedDate date={post.data.updatedDate} />
 					</span>
 				)}
-				{post.data.type && <span class="post-tag">{post.data.type}</span>}
-				{game && <span class="post-tag">{game}</span>}
+			</div>
+			<div class="post-badges">
+				{typeLabel && <span class="post-badge">{typeLabel}</span>}
+				{game && <span class="post-badge">{game}</span>}
+				{regions.map((region, index) => (
+					<span class="post-badge" data-kind="region" data-value={region} key={index}>
+						{region}
+					</span>
+				))}
+				{showTags &&
+					tags.map((tag) => (
+						<a
+							href={withBase(`tags/${encodeURIComponent(tag)}/`)}
+							class={[
+								'post-badge',
+								'post-badge-link',
+								tag === currentTag ? 'current' : '',
+							]
+								.filter(Boolean)
+								.join(' ')}
+						>
+							{tag}
+						</a>
+					))}
 			</div>
 			{summary && <p class="post-description">{summary}</p>}
-			{regions.length > 0 && (
-				<div class="post-tags post-regions">
-					{regions.map((region) => (
-						<span class="post-tag">{region}</span>
-					))}
-				</div>
-			)}
 		</>
 	)}
-	{showTags && tags.length > 0 && (
-		<div class="post-tags post-tags-list">
-			{tags.map((tag) => (
-				<a
-					href={`${baseUrl}tags/${encodeURIComponent(tag)}/`}
-					class={`post-tag ${tag === currentTag ? 'current' : ''}`}
-				>
-					{tag}
-				</a>
-			))}
-		</div>
-	)}
+
 </li>
+
+<style>
+	.post-badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-top: 0.4rem;
+	}
+	.post-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.15rem 0.6rem;
+		border-radius: 999px;
+		background-color: #f3f3f3;
+		color: #333;
+		font-size: 0.75rem;
+		line-height: 1.4;
+		transition: background-color 0.2s ease, color 0.2s ease;
+	}
+	.post-badge-link {
+		text-decoration: none;
+	}
+	.post-badge-link:hover {
+		background-color: #e7e7e7;
+	}
+	.post-badge.current {
+		background-color: #333;
+		color: #fff;
+	}
+</style>
+

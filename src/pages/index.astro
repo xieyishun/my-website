@@ -1,43 +1,246 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import PostCard from '../components/PostCard.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import { withBase } from '../utils/url';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+
+const latestPosts = posts.slice(0, 5);
+
+type SeriesItem = {
+	name: string;
+	count: number;
+	latestDate: Date;
+};
+
+const seriesMap = new Map<string, SeriesItem>();
+const tagMap = new Map<string, number>();
+
+posts.forEach((post) => {
+	const seriesList = post.data.series ?? [];
+	seriesList.forEach((name) => {
+		const existing = seriesMap.get(name);
+		if (!existing) {
+			seriesMap.set(name, {
+				name,
+				count: 1,
+				latestDate: post.data.pubDate,
+			});
+			return;
+		}
+		existing.count += 1;
+		if (post.data.pubDate > existing.latestDate) {
+			existing.latestDate = post.data.pubDate;
+		}
+	});
+
+	const tags = post.data.tags ?? [];
+	tags.forEach((tag) => {
+		tagMap.set(tag, (tagMap.get(tag) || 0) + 1);
+	});
+});
+
+const topSeries = Array.from(seriesMap.values())
+	.sort((a, b) => {
+		if (b.count !== a.count) return b.count - a.count;
+		return b.latestDate.valueOf() - a.latestDate.valueOf();
+	})
+	.slice(0, 6);
+
+const topTags = Array.from(tagMap.entries())
+	.map(([name, count]) => ({ name, count }))
+	.sort((a, b) => {
+		if (b.count !== a.count) return b.count - a.count;
+		return a.name.localeCompare(b.name, 'zh-CN');
+	})
+	.slice(0, 12);
 ---
 
 <!doctype html>
 <html lang="zh-CN">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			main {
+				width: 960px;
+			}
+			.hero {
+				margin-bottom: 2.5rem;
+			}
+			.hero h1 {
+				margin: 0 0 0.5rem 0;
+				font-size: 2.25rem;
+			}
+			.hero p {
+				margin: 0;
+				color: rgb(var(--gray));
+				font-size: 1.05rem;
+			}
+			.section {
+				margin: 2rem 0;
+			}
+			.section-header {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 1rem;
+				margin-bottom: 1rem;
+			}
+			.section-title {
+				margin: 0;
+				font-size: 1.5rem;
+			}
+			.section-link {
+				color: rgb(var(--accent));
+				text-decoration: none;
+				font-size: 0.95rem;
+			}
+			.section-link:hover {
+				text-decoration: underline;
+			}
+			.posts-list {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+				display: grid;
+				grid-template-columns: 1fr;
+				gap: 1.25rem;
+			}
+			.series-grid,
+			.tags-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+				gap: 1rem;
+			}
+			.series-card,
+			.tag-card {
+				padding: 1rem;
+				border: 1px solid #e0e0e0;
+				border-radius: 8px;
+				text-decoration: none;
+				color: inherit;
+				transition: border-color 0.2s ease, box-shadow 0.2s ease;
+			}
+			.series-card:hover,
+			.tag-card:hover {
+				border-color: #333;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+			}
+			.card-title {
+				margin: 0 0 0.25rem 0;
+				font-size: 1rem;
+				font-weight: 600;
+			}
+			.card-meta {
+				color: #666;
+				font-size: 0.85rem;
+			}
+			.empty {
+				color: #666;
+				text-align: center;
+				padding: 1.5rem 0;
+			}
+			@media (max-width: 720px) {
+				main {
+					width: 100%;
+				}
+				.hero h1 {
+					font-size: 1.75rem;
+				}
+				.section-header {
+					flex-direction: column;
+					align-items: flex-start;
+				}
+				.series-grid,
+				.tags-grid {
+					grid-template-columns: 1fr 1fr;
+				}
+			}
+			@media (max-width: 480px) {
+				.series-grid,
+				.tags-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
 	</head>
 	<body>
 		<Header />
 		<main>
-			<h1>🎮 游戏运营与拆解</h1>
-			
-			<p>
-				你好！我是 <strong>刀刀</strong>
-				<br>
-				目前在攻读商业数据分析硕士。
-			</p>
-		
-			<p>
-				这个网站是我的个人知识库，主要用于分享和记录：
-			</p>
-		
-			<ul>
-				<li>🧩 <strong>游戏拆解 (Game Deconstruction):</strong> 分析热门游戏的玩法循环与经济系统。</li>
-				<li>📈 <strong>游戏运营 (Game Operations):</strong> 探讨用户留存、活动设计与商业化策略。</li>
-				<li>📊 <strong>数据分析 (Data Analysis):</strong> 使用 SQL/Python/Tableau 解决业务问题。</li>
-			</ul>
-		
-			<p>
-				希望能通过这些记录，用数据的视角去解构游戏业务。
-			</p>
-		
-			<p>
-				欢迎阅读我的 <a href="/my-website/blog">最新文章</a>，或者在 <a href="/my-website/about">关于我</a> 页面了解更多。
-			</p>
+			<section class="hero">
+				<h1>{SITE_TITLE}</h1>
+				<p>{SITE_DESCRIPTION}</p>
+			</section>
+
+			<section class="section">
+				<div class="section-header">
+					<h2 class="section-title">最新更新</h2>
+					<a class="section-link" href={withBase('blog/')}>查看全部</a>
+				</div>
+				{latestPosts.length > 0 ? (
+					<ul class="posts-list">
+						{latestPosts.map((post) => (
+							<PostCard post={post} showTags={true} />
+						))}
+					</ul>
+				) : (
+					<div class="empty">暂无文章</div>
+				)}
+			</section>
+
+			<section class="section">
+				<div class="section-header">
+					<h2 class="section-title">专题 Series</h2>
+					<a class="section-link" href={withBase('series/')}>查看全部专题</a>
+				</div>
+				{topSeries.length > 0 ? (
+					<div class="series-grid">
+						{topSeries.map((item) => (
+							<a
+								class="series-card"
+								href={withBase(`series/${encodeURIComponent(item.name)}/`)}
+							>
+								<div class="card-title">{item.name}</div>
+								<div class="card-meta">{item.count} 篇文章</div>
+								<div class="card-meta">
+									最近更新：<FormattedDate date={item.latestDate} />
+								</div>
+							</a>
+						))}
+					</div>
+				) : (
+					<div class="empty">暂无专题</div>
+				)}
+			</section>
+
+			<section class="section">
+				<div class="section-header">
+					<h2 class="section-title">标签 Tags</h2>
+					<a class="section-link" href={withBase('tags/')}>查看全部标签</a>
+				</div>
+				{topTags.length > 0 ? (
+					<div class="tags-grid">
+						{topTags.map((tag) => (
+							<a
+								class="tag-card"
+								href={withBase(`tags/${encodeURIComponent(tag.name)}/`)}
+							>
+								<div class="card-title">{tag.name}</div>
+								<div class="card-meta">{tag.count} 篇文章</div>
+							</a>
+						))}
+					</div>
+				) : (
+					<div class="empty">暂无标签</div>
+				)}
+			</section>
 		</main>
 		<Footer />
 	</body>
