@@ -1,0 +1,92 @@
+---
+import { Image } from 'astro:assets';
+import FormattedDate from './FormattedDate.astro';
+
+const {
+	post,
+	showImage = false,
+	wrapLink = false,
+	showTags = false,
+	currentTag = '',
+} = Astro.props;
+
+const baseUrl = import.meta.env.BASE_URL;
+const slug = post.slug || post.id.replace(/\.mdx?$/, '');
+const href = `${baseUrl}blog/${slug}/`;
+const summary = (post.data.summary ?? '').trim();
+const game = (post.data.game ?? '').trim();
+const regions = post.data.region ?? [];
+const tags = post.data.tags ?? [];
+---
+
+<li class="post-item">
+	{wrapLink ? (
+		<a href={href} class="post-link">
+			{showImage && post.data.heroImage && (
+				<Image width={720} height={360} src={post.data.heroImage} alt="" />
+			)}
+			<h2 class="post-title title">{post.data.title}</h2>
+			<div class="post-meta">
+				<span class="post-date">
+					<FormattedDate date={post.data.pubDate} />
+				</span>
+				{post.data.updatedDate && (
+					<span class="post-updated">
+						更新于 <FormattedDate date={post.data.updatedDate} />
+					</span>
+				)}
+				{post.data.type && <span class="post-tag">{post.data.type}</span>}
+				{game && <span class="post-tag">{game}</span>}
+			</div>
+			{summary && <p class="post-description">{summary}</p>}
+			{regions.length > 0 && (
+				<div class="post-tags post-regions">
+					{regions.map((region) => (
+						<span class="post-tag">{region}</span>
+					))}
+				</div>
+			)}
+		</a>
+	) : (
+		<>
+			{showImage && post.data.heroImage && (
+				<Image width={720} height={360} src={post.data.heroImage} alt="" />
+			)}
+			<h2 class="post-title title">
+				<a href={href}>{post.data.title}</a>
+			</h2>
+			<div class="post-meta">
+				<span class="post-date">
+					<FormattedDate date={post.data.pubDate} />
+				</span>
+				{post.data.updatedDate && (
+					<span class="post-updated">
+						更新于 <FormattedDate date={post.data.updatedDate} />
+					</span>
+				)}
+				{post.data.type && <span class="post-tag">{post.data.type}</span>}
+				{game && <span class="post-tag">{game}</span>}
+			</div>
+			{summary && <p class="post-description">{summary}</p>}
+			{regions.length > 0 && (
+				<div class="post-tags post-regions">
+					{regions.map((region) => (
+						<span class="post-tag">{region}</span>
+					))}
+				</div>
+			)}
+		</>
+	)}
+	{showTags && tags.length > 0 && (
+		<div class="post-tags post-tags-list">
+			{tags.map((tag) => (
+				<a
+					href={`${baseUrl}tags/${encodeURIComponent(tag)}/`}
+					class={`post-tag ${tag === currentTag ? 'current' : ''}`}
+				>
+					{tag}
+				</a>
+			))}
+		</div>
+	)}
+</li>

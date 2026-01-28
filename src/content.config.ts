@@ -9,6 +9,11 @@ const blog = defineCollection({
 		z.object({
 			title: z.string(),
 			description: z.string(),
+			type: z.enum(['note', 'analysis', 'report']).optional().default('analysis'),
+			series: z.array(z.string()).optional().default([]),
+			game: z.string().optional().default(''),
+			region: z.array(z.string()).optional().default([]),
+			summary: z.string().optional().default(''),
 			// Transform string to Date object
 			pubDate: z.coerce.date(),
 			updatedDate: z.coerce.date().optional(),

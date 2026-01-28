@@ -1,10 +1,9 @@
 ---
-import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
+import PostCard from '../../components/PostCard.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
 const posts = (await getCollection('blog')).sort(
@@ -58,12 +57,39 @@ const posts = (await getCollection('blog')).sort(
 				color: rgb(var(--black));
 				line-height: 1;
 			}
+			.post-meta {
+				margin-top: 0.4rem;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.4rem 0.75rem;
+				align-items: center;
+				color: rgb(var(--gray));
+				font-size: 0.9rem;
+			}
 			.date {
 				margin: 0;
 				color: rgb(var(--gray));
 			}
-			ul li a:hover h4,
-			ul li a:hover .date {
+			.post-description {
+				margin: 0.5rem 0 0;
+				color: rgb(var(--gray-dark));
+			}
+			.post-tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.4rem;
+				margin-top: 0.5rem;
+			}
+			.post-tag {
+				display: inline-block;
+				padding: 0.15rem 0.6rem;
+				background-color: #f0f0f0;
+				border-radius: 999px;
+				font-size: 0.75rem;
+				color: #333;
+			}
+			ul li a:hover .post-title,
+			ul li a:hover .post-meta {
 				color: rgb(var(--accent));
 			}
 			ul a:hover img {
@@ -92,28 +118,12 @@ const posts = (await getCollection('blog')).sort(
 			<section>
 				<ul>
 					{
-						posts.map((post) => {
-							// 👇 关键修复：如果 slug 不存在，就用文件名(id)代替，并去掉 .md 后缀
-							const slug = post.slug || post.id.replace(/\.mdx?$/, '');
-							return (
-								<li>
-									{/* 👇 关键修复：手动拼接路径，确保中间有斜杠 / */}
-									<a href={`/my-website/blog/${slug}/`}>
-										{post.data.heroImage && (
-											<Image width={720} height={360} src={post.data.heroImage} alt="" />
-										)}
-										<h4 class="title">{post.data.title}</h4>
-										<p class="date">
-											<FormattedDate date={post.data.pubDate} />
-										</p>
-									</a>
-								</li>
-							);
-						})
-					}
+				posts.map((post) => <PostCard post={post} showImage={true} wrapLink={true} />)
+			}
 				</ul>
 			</section>
 		</main>
 		<Footer />
 	</body>
 </html>
+
