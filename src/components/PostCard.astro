@@ -10,7 +10,9 @@ const {
 	currentTag = '',
 } = Astro.props;
 
-const baseUrl = import.meta.env.BASE_URL;
+const baseUrl = import.meta.env.BASE_URL.endsWith('/')
+	? import.meta.env.BASE_URL
+	: `${import.meta.env.BASE_URL}/`;
 const slug = post.slug || post.id.replace(/\.mdx?$/, '');
 const href = `${baseUrl}blog/${slug}/`;
 const summary = (post.data.summary ?? '').trim();
