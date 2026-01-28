@@ -17,26 +17,32 @@
 		rgba(var(--gray), 33%);
 }
 
-/* ✅ 修复重点 1：加上 /my-website 前缀 */
+/* 暂时禁用自定义字体：项目未提供 /public/fonts 下的 woff 文件时，会导致构建 WARN 与线上 404
+   若以后要启用：
+   1) 添加 public/fonts/atkinson-regular.woff 与 public/fonts/atkinson-bold.woff
+   2) 将 url 改为 /fonts/atkinson-regular.woff 与 /fonts/atkinson-bold.woff（不要写死 /my-website）
+*/
+/*
 @font-face {
 	font-family: 'Atkinson';
-	src: url('/my-website/fonts/atkinson-regular.woff') format('woff');
+	src: url('/fonts/atkinson-regular.woff') format('woff');
 	font-weight: 400;
 	font-style: normal;
 	font-display: swap;
 }
 
-/* ✅ 修复重点 2：加上 /my-website 前缀 */
 @font-face {
 	font-family: 'Atkinson';
-	src: url('/my-website/fonts/atkinson-bold.woff') format('woff');
+	src: url('/fonts/atkinson-bold.woff') format('woff');
 	font-weight: 700;
 	font-style: normal;
 	font-display: swap;
 }
+*/
 
 body {
-	font-family: 'Atkinson', sans-serif;
+	font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+		"Apple Color Emoji", "Segoe UI Emoji";
 	margin: 0;
 	padding: 0;
 	text-align: left;
@@ -48,6 +54,7 @@ body {
 	font-size: 20px;
 	line-height: 1.7;
 }
+
 main {
 	width: 720px;
 	max-width: calc(100% - 2em);

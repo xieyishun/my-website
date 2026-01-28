@@ -1,0 +1,120 @@
+---
+const { items = [] } = Astro.props;
+---
+
+<div class="timeline">
+	{items.map((item) => (
+		<div class="timeline-row">
+			<div class="timeline-axis">
+				<span class="timeline-dot" aria-hidden="true"></span>
+				<span class="timeline-line" aria-hidden="true"></span>
+			</div>
+			<div class="timeline-card">
+				<div class="timeline-meta">
+					<span class="timeline-date">{item.date}</span>
+					{item.tag && <span class="timeline-tag">{item.tag}</span>}
+				</div>
+				<div class="timeline-title">{item.title}</div>
+				{item.detail && <div class="timeline-detail">{item.detail}</div>}
+				{item.link && (
+					<a class="timeline-link" href={item.link}>
+						来源/链接
+					</a>
+				)}
+			</div>
+		</div>
+	))}
+</div>
+
+<style>
+	.timeline {
+		display: grid;
+		gap: 1rem;
+		margin: 1.25rem 0;
+	}
+	.timeline-row {
+		display: grid;
+		grid-template-columns: 24px 1fr;
+		gap: 0.75rem;
+		align-items: start;
+	}
+	.timeline-axis {
+		position: relative;
+		display: flex;
+		justify-content: center;
+	}
+	.timeline-dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 999px;
+		background: #333;
+		margin-top: 6px;
+		z-index: 1;
+	}
+	.timeline-line {
+		position: absolute;
+		top: 18px;
+		bottom: -12px;
+		width: 2px;
+		background: #e0e0e0;
+	}
+	.timeline-row:last-child .timeline-line {
+		display: none;
+	}
+	.timeline-card {
+		border: 1px solid #e6e6e6;
+		border-radius: 8px;
+		padding: 0.75rem 0.9rem;
+		background: #fff;
+	}
+	.timeline-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: #666;
+		font-size: 0.85rem;
+		margin-bottom: 0.25rem;
+	}
+	.timeline-date {
+		white-space: nowrap;
+	}
+	.timeline-tag {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.1rem 0.5rem;
+		border-radius: 999px;
+		background: #f3f3f3;
+		font-size: 0.75rem;
+		color: #333;
+	}
+	.timeline-title {
+		font-weight: 600;
+		margin-bottom: 0.35rem;
+	}
+	.timeline-detail {
+		color: #555;
+		font-size: 0.95rem;
+	}
+	.timeline-link {
+		display: inline-block;
+		margin-top: 0.5rem;
+		font-size: 0.85rem;
+		color: #0066cc;
+		text-decoration: none;
+	}
+	.timeline-link:hover {
+		text-decoration: underline;
+	}
+	@media (max-width: 480px) {
+		.timeline-row {
+			grid-template-columns: 20px 1fr;
+			gap: 0.6rem;
+		}
+		.timeline-card {
+			padding: 0.7rem 0.8rem;
+		}
+		.timeline-detail {
+			font-size: 0.9rem;
+		}
+	}
+</style>

@@ -4,6 +4,6 @@ import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   site: 'https://xieyishun.github.io',
-  base: '/my-website', 
+  base: '/my-website',
   integrations: [mdx(), sitemap()],
 });

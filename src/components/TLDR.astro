@@ -1,0 +1,96 @@
+---
+type TLDRItem = string | { text: string; icon?: string };
+
+interface Props {
+  title?: string;
+  items: TLDRItem[];
+}
+
+const { title = 'TL;DR', items = [] } = Astro.props;
+
+const normalized = items
+  .filter(Boolean)
+  .map((it) => (typeof it === 'string' ? { text: it } : it));
+---
+
+<section class="tldr">
+  <div class="tldr-header">
+    <h2 class="tldr-title">{title}</h2>
+  </div>
+
+  {normalized.length > 0 ? (
+    <ul class="tldr-grid">
+      {normalized.map((it) => (
+        <li class="tldr-card">
+          <div class="tldr-icon" aria-hidden="true">{it.icon ?? '✅'}</div>
+          <div class="tldr-text">{it.text}</div>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <div class="tldr-empty">暂无要点</div>
+  )}
+</section>
+
+<style>
+  .tldr {
+    margin: 1.25rem 0 1.75rem;
+    padding: 1rem 1rem 1.1rem;
+    border: 1px solid #e6e6e6;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .tldr-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .tldr-title {
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+  .tldr-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  .tldr-card {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.75rem 0.8rem;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  .tldr-icon {
+    width: 1.6rem;
+    height: 1.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #f0f0f0;
+    flex: 0 0 auto;
+    font-size: 0.95rem;
+  }
+  .tldr-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #222;
+  }
+  .tldr-empty {
+    color: #666;
+    font-size: 0.95rem;
+  }
+  @media (max-width: 900px) {
+    .tldr-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
