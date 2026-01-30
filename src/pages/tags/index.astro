@@ -3,92 +3,64 @@ import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 import { withBase } from '../../utils/url';
+import { buildSlugMap, slugify } from '../../utils/slug';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 
-const allPosts = await getCollection('blog');
-
-// 收集所有标签并计数
+const posts = await getCollection('blog');
 const tagMap = new Map<string, number>();
 
-allPosts.forEach(post => {
-  if (post.data.tags) {
-    post.data.tags.forEach(tag => {
-      tagMap.set(tag, (tagMap.get(tag) || 0) + 1);
-    });
-  }
+posts.forEach((post) => {
+	const tags = post.data.tags ?? [];
+	tags.forEach((tag) => {
+		const key = String(tag).trim();
+		if (!key) return;
+		tagMap.set(key, (tagMap.get(key) || 0) + 1);
+	});
 });
 
-// 转换为数组并排序
-const tags = Array.from(tagMap.entries())
-  .map(([name, count]) => ({ name, count }))
-  .sort((a, b) => b.count - a.count);
+const tagList = Array.from(tagMap.entries())
+	.map(([name, count]) => ({ name, count }))
+	.sort((a, b) => (b.count !== a.count ? b.count - a.count : a.name.localeCompare(b.name, 'zh-CN')));
 
+const tagSlugMap = buildSlugMap(tagList.map((t) => t.name));
 ---
 
 <!doctype html>
-<html lang="zh-cn">
-  <head>
-    <BaseHead title={`标签 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
-    <style>
-      main {
-        width: 960px;
-      }
-      .tags-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin: 2rem 0;
-      }
-      .tag-card {
-        padding: 1.5rem;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        text-align: center;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        color: inherit;
-      }
-      .tag-card:hover {
-        border-color: #333;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-      }
-      .tag-name {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-      .tag-count {
-        color: #666;
-        font-size: 0.9rem;
-      }
-      .empty-state {
-        text-align: center;
-        padding: 3rem;
-        color: #666;
-      }
-    </style>
-  </head>
-  <body>
-    <Header />
-    <main>
-      <h1>📌 所有标签</h1>
-      {tags.length > 0 ? (
-        <div class="tags-grid">
-          {tags.map(tag => (
-            <a href={withBase(`tags/${encodeURIComponent(tag.name)}/`)} class="tag-card">
-              <div class="tag-name">{tag.name}</div>
-              <div class="tag-count">{tag.count} 篇文章</div>
-            </a>
-          ))}
-        </div>
-      ) : (
-        <div class="empty-state">
-          <p>还没有任何标签</p>
-        </div>
-      )}
-    </main>
-    <Footer />
-  </body>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`Tags | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+		<style>
+			main { width: 960px; }
+			.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+			.card { padding: 1rem; border: 1px solid #e0e0e0; border-radius: 8px; text-decoration: none; color: inherit; }
+			.card:hover { border-color: #333; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+			.title { margin: 0 0 .25rem 0; font-weight: 600; }
+			.meta { color: #666; font-size: .9rem; }
+			@media (max-width: 720px) { main { width: 100%; } }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main id="main-content">
+			<h1>标签 Tags</h1>
+
+			{tagList.length > 0 ? (
+				<div class="grid">
+					{tagList.map((t) => (
+						<a
+							class="card"
+							href={withBase(`/tags/${tagSlugMap.get(t.name) ?? slugify(t.name)}/`)}
+						>
+							<div class="title">{t.name}</div>
+							<div class="meta">{t.count} 篇文章</div>
+						</a>
+					))}
+				</div>
+			) : (
+				<p style="color:#666;">暂无标签</p>
+			)}
+		</main>
+		<Footer />
+	</body>
 </html>

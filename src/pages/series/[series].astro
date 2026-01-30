@@ -4,167 +4,98 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import PostCard from '../../components/PostCard.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 import { withBase } from '../../utils/url';
+import { slugify } from '../../utils/slug';
+import { SITE_TITLE } from '../../consts';
 
 export async function getStaticPaths() {
-	const allPosts = await getCollection('blog');
+	const posts = await getCollection('blog');
+	const set = new Set<string>();
 
-	const seriesSet = new Set<string>();
-	allPosts.forEach((post) => {
-		const seriesList = post.data.series ?? [];
-		seriesList.forEach((name) => {
-			seriesSet.add(name);
-		});
-	});
+	for (const p of posts) {
+		for (const s of (p.data.series ?? [])) {
+			const name = String(s).trim();
+			if (name) set.add(name);
+		}
+	}
 
-	return Array.from(seriesSet).map((name) => {
-		const seriesSlug = encodeURIComponent(name);
-		return {
-			params: { series: seriesSlug },
-			props: {
-				seriesName: name,
-				posts: allPosts.filter((post) => post.data.series?.includes(name)),
-			},
-		};
+	return Array.from(set).flatMap((name) => {
+		const slug = slugify(name);
+		const paths = [
+			{ params: { series: slug }, props: { name, slug, legacy: false } },
+		];
+		if (name !== slug) {
+			paths.push({ params: { series: name }, props: { name, slug, legacy: true } });
+		}
+		return paths;
 	});
 }
 
-interface Props {
-	seriesName: string;
-	posts: any[];
-}
+const { name, slug, legacy = false } = Astro.props as {
+	name: string;
+	slug: string;
+	legacy?: boolean;
+};
+const redirectTo = legacy ? withBase(`/series/${slug}/`) : '';
 
-const { seriesName, posts } = Astro.props;
+const posts = (await getCollection('blog'))
+	.slice()
+	.sort((a, b) => {
+		const ad = (a.data.updatedDate ?? a.data.pubDate).valueOf();
+		const bd = (b.data.updatedDate ?? b.data.pubDate).valueOf();
+		return bd - ad;
+	});
 
-const sortedPosts = posts.sort(
-	(a, b) => new Date(b.data.pubDate).getTime() - new Date(a.data.pubDate).getTime(),
-);
-
+const seriesPosts = posts.filter((p) => {
+	const seriesList = (p.data.series ?? []).map((x) => String(x).trim());
+	return seriesList.includes(name);
+});
 ---
 
-<!doctype html>
-<html lang="zh-cn">
-	<head>
-		<BaseHead title={`专题: ${seriesName} | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
-		<style>
-			main {
-				width: 960px;
-			}
-			.series-header {
-				margin-bottom: 2rem;
-				padding-bottom: 1.5rem;
-				border-bottom: 2px solid #e0e0e0;
-			}
-			.series-title {
-				font-size: 2.5rem;
-				font-weight: 700;
-				margin-bottom: 0.5rem;
-			}
-			.series-description {
-				color: #666;
-				font-size: 1.1rem;
-			}
-			.posts-list {
-				list-style: none;
-				padding: 0;
-			}
-			.post-item {
-				padding: 1rem 0;
-				border-bottom: 1px solid #e0e0e0;
-			}
-			.post-item:last-child {
-				border-bottom: none;
-			}
-			.post-title {
-				font-size: 1.5rem;
-				font-weight: 600;
-				margin-bottom: 0.5rem;
-			}
-			.post-title a {
-				text-decoration: none;
-				color: inherit;
-			}
-			.post-title a:hover {
-				color: #0066cc;
-			}
-			.post-meta {
-				display: flex;
-				gap: 1rem;
-				flex-wrap: wrap;
-				align-items: center;
-				color: #666;
-				font-size: 0.9rem;
-			}
-			.post-description {
-				margin-top: 0.5rem;
-				color: #555;
-			}
-			.post-tags {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.5rem;
-				margin-top: 0.5rem;
-			}
-			.post-tag {
-				display: inline-block;
-				padding: 0.2rem 0.6rem;
-				background-color: #f0f0f0;
-				border-radius: 4px;
-				font-size: 0.85rem;
-				text-decoration: none;
-				color: #333;
-				transition: background-color 0.2s;
-			}
-			.post-tag:hover {
-				background-color: #e0e0e0;
-			}
-			.empty-state {
-				text-align: center;
-				padding: 3rem;
-				color: #666;
-			}
-			.back-link {
-				display: inline-block;
-				margin-bottom: 1rem;
-				color: #0066cc;
-				text-decoration: none;
-			}
-			.back-link:hover {
-				text-decoration: underline;
-			}
-		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<a href={withBase('series/')} class="back-link">← 返回所有专题</a>
+{redirectTo ? (
+	<!doctype html>
+	<html lang="zh-CN">
+		<head>
+			<meta charset="utf-8" />
+			<meta http-equiv="refresh" content={`0; url=${redirectTo}`} />
+			<link rel="canonical" href={redirectTo} />
+			<title>Redirecting...</title>
+		</head>
+		<body>
+			<p>Redirecting to <a href={redirectTo}>{redirectTo}</a></p>
+		</body>
+	</html>
+) : (
+	<!doctype html>
+	<html lang="zh-CN">
+		<head>
+			<BaseHead title={`${name} | Series | ${SITE_TITLE}`} description={`专题：${name}`} />
+			<style>
+				main { width: 960px; }
+				.back { display: inline-block; margin: 1rem 0; text-decoration: none; color: rgb(var(--accent)); }
+				.back:hover { text-decoration: underline; }
+				.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
+				@media (max-width: 720px) { main { width: 100%; } }
+			</style>
+		</head>
+		<body>
+			<Header />
+			<main id="main-content">
+				<a class="back" href={withBase('/series/')}>← 返回专题列表</a>
+				<h1>{name}</h1>
+				<p style="color:#666;">共 {seriesPosts.length} 篇</p>
 
-			<div class="series-header">
-				<h1 class="series-title">📘 {seriesName}</h1>
-				<p class="series-description">共 {sortedPosts.length} 篇文章</p>
-			</div>
-
-			{sortedPosts.length > 0 ? (
-				<ul class="posts-list">
-					{sortedPosts.map((post) => (
-						<PostCard post={post} showTags={true} />
-					))}
-				</ul>
-			) : (
-				<div class="empty-state">
-					<p>此专题下暂无文章</p>
-				</div>
-			)}
-		</main>
-		<Footer />
-	</body>
-</html>
-
-
-
-
-
-
-
-
+				{seriesPosts.length > 0 ? (
+					<ul class="list">
+						{seriesPosts.map((post) => (
+							<li><PostCard post={post} showTags={true} /></li>
+						))}
+					</ul>
+				) : (
+					<p style="color:#666;">暂无文章</p>
+				)}
+			</main>
+			<Footer />
+		</body>
+	</html>
+)}

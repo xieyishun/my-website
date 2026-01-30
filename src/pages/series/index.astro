@@ -4,10 +4,13 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 import { withBase } from '../../utils/url';
+import { buildSlugMap, slugify } from '../../utils/slug';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 
-const allPosts = await getCollection('blog');
+const posts = (await getCollection('blog'))
+	.slice()
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
 type SeriesItem = {
 	name: string;
@@ -17,103 +20,72 @@ type SeriesItem = {
 
 const seriesMap = new Map<string, SeriesItem>();
 
-allPosts.forEach((post) => {
+posts.forEach((post) => {
+	const effectiveDate = post.data.updatedDate ?? post.data.pubDate;
 	const seriesList = post.data.series ?? [];
+
 	seriesList.forEach((name) => {
-		const existing = seriesMap.get(name);
+		const key = String(name).trim();
+		if (!key) return;
+
+		const existing = seriesMap.get(key);
 		if (!existing) {
-			seriesMap.set(name, {
-				name,
-				count: 1,
-				latestDate: post.data.pubDate,
-			});
+			seriesMap.set(key, { name: key, count: 1, latestDate: effectiveDate });
 			return;
 		}
 		existing.count += 1;
-		if (post.data.pubDate > existing.latestDate) {
-			existing.latestDate = post.data.pubDate;
-		}
+		if (effectiveDate > existing.latestDate) existing.latestDate = effectiveDate;
 	});
 });
 
-const series = Array.from(seriesMap.values()).sort(
-	(a, b) => b.latestDate.valueOf() - a.latestDate.valueOf(),
-);
+const seriesList = Array.from(seriesMap.values()).sort((a, b) => {
+	// 默认：更新更近的在前；同更新按数量；再按中文名
+	const d = b.latestDate.valueOf() - a.latestDate.valueOf();
+	if (d !== 0) return d;
+	const c = b.count - a.count;
+	if (c !== 0) return c;
+	return a.name.localeCompare(b.name, 'zh-CN');
+});
 
+const seriesSlugMap = buildSlugMap(seriesList.map((s) => s.name));
 ---
 
 <!doctype html>
-<html lang="zh-cn">
+<html lang="zh-CN">
 	<head>
-		<BaseHead title={`专题 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+		<BaseHead title={`Series | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
 		<style>
-			main {
-				width: 960px;
-			}
-			.series-grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-				gap: 1.5rem;
-				margin: 2rem 0;
-			}
-			.series-card {
-				padding: 1.5rem;
-				border: 1px solid #e0e0e0;
-				border-radius: 8px;
-				text-align: left;
-				transition: all 0.3s ease;
-				text-decoration: none;
-				color: inherit;
-			}
-			.series-card:hover {
-				border-color: #333;
-				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-				transform: translateY(-2px);
-			}
-			.series-name {
-				font-size: 1.4rem;
-				font-weight: 600;
-				margin-bottom: 0.5rem;
-			}
-			.series-meta {
-				color: #666;
-				font-size: 0.9rem;
-				display: flex;
-				flex-direction: column;
-				gap: 0.25rem;
-			}
-			.empty-state {
-				text-align: center;
-				padding: 3rem;
-				color: #666;
-			}
+			main { width: 960px; }
+			.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+			.card { padding: 1rem; border: 1px solid #e0e0e0; border-radius: 8px; text-decoration: none; color: inherit; }
+			.card:hover { border-color: #333; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+			.title { margin: 0 0 .25rem 0; font-weight: 600; }
+			.meta { color: #666; font-size: .9rem; }
+			@media (max-width: 720px) { main { width: 100%; } }
 		</style>
 	</head>
 	<body>
 		<Header />
-		<main>
-			<h1>📚 所有专题</h1>
-			{series.length > 0 ? (
-				<div class="series-grid">
-					{series.map((item) => (
-						<a
-							href={withBase(`series/${encodeURIComponent(item.name)}/`)}
-							class="series-card"
-						>
-							<div class="series-name">{item.name}</div>
-							<div class="series-meta">
-								<div>{item.count} 篇文章</div>
-								<div>
-									最近更新：<FormattedDate date={item.latestDate} />
-								</div>
-							</div>
-						</a>
+		<main id="main-content">
+			<h1>专题 Series</h1>
+
+			{seriesList.length > 0 ? (
+				<ul class="list">
+					{seriesList.map((s) => (
+						<li>
+							<a
+								class="card"
+								href={withBase(`/series/${seriesSlugMap.get(s.name) ?? slugify(s.name)}/`)}
+							>
+								<div class="title">{s.name}</div>
+								<div class="meta">{s.count} 篇文章</div>
+								<div class="meta">最近更新：<FormattedDate date={s.latestDate} /></div>
+							</a>
+						</li>
 					))}
-				</div>
+				</ul>
 			) : (
-				<div class="empty-state">
-					<p>还没有任何专题</p>
-				</div>
+				<p style="color:#666;">暂无专题</p>
 			)}
 		</main>
 		<Footer />

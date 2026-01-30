@@ -1,0 +1,190 @@
+---
+import FormattedDate from './FormattedDate.astro';
+import { withBase } from '../utils/url';
+import { slugify } from '../utils/slug';
+
+type TypeValue = 'note' | 'analysis' | 'report';
+
+interface Props {
+  type?: TypeValue | string;
+  game?: string;
+  region?: string[];
+  series?: string[];
+  tags?: string[];
+  pubDate: Date;
+  updatedDate?: Date;
+}
+
+const {
+  type = 'analysis',
+  game = '',
+  region = [],
+  series = [],
+  tags = [],
+  pubDate,
+  updatedDate,
+} = Astro.props;
+
+const typeLabelMap = {
+  note: '笔记',
+  analysis: '分析',
+  report: '报告',
+} as const;
+
+const typeLabel =
+  (type in typeLabelMap ? typeLabelMap[type as keyof typeof typeLabelMap] : String(type)) || '';
+
+const safeRegions = Array.isArray(region) ? region : [];
+const safeSeries = Array.isArray(series) ? series : [];
+const safeTags = Array.isArray(tags) ? tags : [];
+const safeGame = (game ?? '').trim();
+
+const regionLabelMap: Record<string, string> = {
+  CN: 'CN',
+  JP: 'JP',
+  KR: 'KR',
+  EN: 'EN',
+};
+---
+
+<div class="meta-bar">
+  <div class="meta-left">
+    {typeLabel && <span class="badge badge-solid">{typeLabel}</span>}
+    {safeGame && <span class="badge">{safeGame}</span>}
+
+    {safeRegions.map((r) => (
+      <span class="badge">{regionLabelMap[r] ?? r}</span>
+    ))}
+  </div>
+
+  <div class="meta-right">
+    <span class="date">
+      发布：<FormattedDate date={pubDate} />
+    </span>
+    {updatedDate && (
+      <span class="date">
+        更新：<FormattedDate date={updatedDate} />
+      </span>
+    )}
+  </div>
+
+  {(safeSeries.length > 0 || safeTags.length > 0) && (
+    <div class="meta-links">
+      {safeSeries.length > 0 && (
+        <div class="link-group">
+          <span class="label">专题：</span>
+          <div class="chips">
+            {safeSeries.map((s) => (
+              <a class="chip" href={withBase(`/series/${slugify(s)}/`)}>
+                {s}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {safeTags.length > 0 && (
+        <div class="link-group">
+          <span class="label">标签：</span>
+          <div class="chips">
+            {safeTags.map((t) => (
+              <a class="chip" href={withBase(`/tags/${slugify(t)}/`)}>
+                {t}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )}
+</div>
+
+<style>
+  .meta-bar {
+    margin: 1rem 0 1.5rem;
+    padding: 1rem 1rem 0.9rem;
+    border: 1px solid #e9e9e9;
+    border-radius: 14px;
+    background: #fff;
+  }
+
+  .meta-left,
+  .meta-right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .meta-right {
+    margin-top: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+    gap: 0.9rem;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: #f3f3f3;
+    color: #333;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .badge-solid {
+    background: #111;
+    color: #fff;
+  }
+
+  .meta-links {
+    margin-top: 0.8rem;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .link-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+
+  .label {
+    color: #666;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid #e6e6e6;
+    background: #fafafa;
+    color: #2337ff;
+    font-size: 0.82rem;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .chip:hover {
+    background: #f2f2ff;
+    border-color: #cfd3ff;
+  }
+
+  @media (max-width: 720px) {
+    .meta-bar {
+      padding: 0.9rem 0.9rem 0.8rem;
+    }
+  }
+</style>

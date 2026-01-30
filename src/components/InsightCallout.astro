@@ -1,0 +1,95 @@
+---
+type Variant = 'insight' | 'warning' | 'success' | 'note';
+
+interface Props {
+  title?: string;
+  variant?: Variant;
+  items?: string[];
+  text?: string;
+}
+
+const { title = '要点', variant = 'insight', items = [], text = '' } = Astro.props;
+
+const variantMap: Record<Variant, { icon: string; label: string }> = {
+  insight: { icon: '💡', label: '关键结论' },
+  warning: { icon: '⚠️', label: '风险与代价' },
+  success: { icon: '✅', label: '有效做法' },
+  note: { icon: '📝', label: '补充说明' },
+};
+
+const meta = variantMap[variant] ?? variantMap.insight;
+const finalTitle = title || meta.label;
+---
+
+<section class={`callout callout-${variant}`}>
+  <div class="callout-head">
+    <span class="callout-icon" aria-hidden="true">{meta.icon}</span>
+    <h3 class="callout-title">{finalTitle}</h3>
+  </div>
+
+  {text ? <p class="callout-text">{text}</p> : null}
+
+  {items && items.length > 0 ? (
+    <ul class="callout-list">
+      {items.map((it) => (
+        <li>{it}</li>
+      ))}
+    </ul>
+  ) : null}
+</section>
+
+<style>
+  .callout {
+    margin: 1.75rem 0;
+    padding: 1rem 1.1rem;
+    border-radius: 14px;
+    border: 1px solid #e7e7e7;
+    background: #fafafa;
+  }
+
+  .callout-head {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .callout-icon {
+    width: 1.8rem;
+    height: 1.8rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #f0f0f0;
+    font-size: 1rem;
+    flex: 0 0 auto;
+  }
+
+  .callout-title {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
+  .callout-text {
+    margin: 0.35rem 0 0;
+    color: #333;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .callout-list {
+    margin: 0.5rem 0 0;
+    padding-left: 1.2rem;
+    color: #333;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  /* Variants (use subtle left border + background tint) */
+  .callout-insight { border-left: 6px solid #2337ff; }
+  .callout-warning { border-left: 6px solid #e07a00; background: #fff8ee; }
+  .callout-success { border-left: 6px solid #1a7f37; background: #f3fff5; }
+  .callout-note    { border-left: 6px solid #6b7280; background: #f7f7f7; }
+</style>

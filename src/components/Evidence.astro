@@ -1,0 +1,115 @@
+---
+interface Source {
+  title: string;
+  url: string;
+  type?: '官方公告' | '补丁说明' | '社区讨论' | '数据来源';
+  region?: string; // CN / JP / KR / EN
+  note?: string;   // 简短说明
+}
+
+interface Props {
+  sources: Source[];
+}
+
+const { sources = [] } = Astro.props;
+---
+
+<section class="evidence">
+  <h2 class="evidence-title">📌 证据与引用</h2>
+
+  {sources.length > 0 ? (
+    <ul class="evidence-list">
+      {sources.map((s) => (
+        <li class="evidence-card">
+          <div class="evidence-meta">
+            {s.type && <span class="badge">{s.type}</span>}
+            {s.region && <span class="badge region">{s.region}</span>}
+          </div>
+
+          <a class="evidence-link" href={s.url} target="_blank">
+            {s.title}
+          </a>
+
+          {s.note && <p class="evidence-note">{s.note}</p>}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="empty">暂无引用来源</p>
+  )}
+</section>
+
+<style>
+  .evidence {
+    margin: 2rem 0;
+    padding: 1.25rem;
+    border: 1px solid #eee;
+    border-radius: 14px;
+    background: #fafafa;
+  }
+
+  .evidence-title {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+  }
+
+  .evidence-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .evidence-card {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #e6e6e6;
+    background: white;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .evidence-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  .evidence-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: #f0f0f0;
+    color: #333;
+  }
+
+  .badge.region {
+    background: #333;
+    color: white;
+  }
+
+  .evidence-link {
+    font-weight: 600;
+    text-decoration: none;
+    color: #2337ff;
+  }
+
+  .evidence-link:hover {
+    text-decoration: underline;
+  }
+
+  .evidence-note {
+    margin: 0.4rem 0 0;
+    font-size: 0.9rem;
+    color: #555;
+  }
+
+  .empty {
+    color: #666;
+    margin: 0;
+  }
+</style>

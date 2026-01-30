@@ -1,15 +1,17 @@
 ---
 import HeaderLink from './HeaderLink.astro';
 import { SITE_TITLE } from '../consts';
+import { withBase } from '../utils/url';
 ---
 
 <header>
+	<a class="skip-link" href="#main-content">Skip to content</a>
 	<nav>
-		<h2><a href="/my-website/">{SITE_TITLE}</a></h2>
+		<h2><a href={withBase('/')}>{SITE_TITLE}</a></h2>
 		<div class="internal-links">
-			<HeaderLink href="/my-website/">Home</HeaderLink>
-			<HeaderLink href="/my-website/blog">Blog</HeaderLink>
-			<HeaderLink href="/my-website/about">About</HeaderLink>
+			<HeaderLink href={withBase('/')}>Home</HeaderLink>
+			<HeaderLink href={withBase('/blog/')}>Blog</HeaderLink>
+			<HeaderLink href={withBase('/about/')}>About</HeaderLink>
 		</div>
 	</nav>
 </header>

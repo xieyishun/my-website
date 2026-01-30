@@ -1,7 +1,9 @@
 ---
 import type { CollectionEntry } from 'astro:content';
+import { Picture } from 'astro:assets';
 import FormattedDate from './FormattedDate.astro';
 import { withBase } from '../utils/url';
+import { slugify } from '../utils/slug';
 
 type TypeValue = 'note' | 'analysis' | 'report';
 
@@ -9,9 +11,17 @@ interface Props {
   post: CollectionEntry<'blog'>;
   showTags?: boolean;
   currentTag?: string;
+  maxTags?: number;
+  showSummary?: boolean;
 }
 
-const { post, showTags = false, currentTag = '' } = Astro.props;
+const {
+  post,
+  showTags = false,
+  currentTag = '',
+  maxTags = 6,
+  showSummary = true,
+} = Astro.props;
 
 const typeLabelMap: Record<TypeValue, string> = {
   note: '笔记',
@@ -24,18 +34,54 @@ const typeLabel =
   typeValue in typeLabelMap ? typeLabelMap[typeValue as TypeValue] : String(typeValue ?? '');
 
 const game = (post.data.game ?? '').trim();
-const regions = Array.isArray(post.data.region) ? post.data.region : [];
-const tags = Array.isArray(post.data.tags) ? post.data.tags : [];
+const heroImage = post.data.image ?? post.data.heroImage;
 
-const href = withBase(`blog/${post.id}/`);
+// ✅ 统一 regions：优先用 regions，其次兼容你之前的 region 字段
+const regions = Array.isArray((post.data as any).regions)
+  ? (post.data as any).regions
+  : Array.isArray((post.data as any).region)
+    ? (post.data as any).region
+    : [];
+
+const tagsAll = Array.isArray(post.data.tags) ? post.data.tags : [];
+const tags = showTags ? tagsAll.slice(0, maxTags) : [];
+
+const summary = (post.data.summary ?? '').trim();
+const desc = (post.data.description ?? '').trim();
+
+// ✅ showSummary=false 时强制用 description；否则优先 summary
+const excerpt = showSummary ? (summary || desc) : desc;
+
+// ✅ 关键修复：withBase 参数统一用 “以 / 开头的站内绝对路径”
+const href = withBase(`/blog/${post.id}/`);
 ---
 
-<li class="post-card">
+<li
+  class="post-card"
+  data-pub={post.data.pubDate.valueOf()}
+  data-updated={post.data.updatedDate ? post.data.updatedDate.valueOf() : ''}
+  data-type={String(post.data.type ?? 'analysis')}
+  data-game={game}
+  data-regions={regions.join(',')}
+>
   <a class="title-link" href={href}>
+    {heroImage && (
+      <span class="post-image">
+        <Picture
+          src={heroImage}
+          width={640}
+          height={360}
+          alt={post.data.title}
+          formats={['avif', 'webp']}
+          loading="lazy"
+          decoding="async"
+        />
+      </span>
+    )}
     <h3 class="post-title">{post.data.title}</h3>
   </a>
 
-  <p class="post-desc">{post.data.description}</p>
+  {excerpt && <p class="post-desc">{excerpt}</p>}
 
   <div class="post-meta">
     <span class="post-date">
@@ -58,12 +104,16 @@ const href = withBase(`blog/${post.id}/`);
     {showTags &&
       tags.map((t) => (
         <a
-          href={withBase(`tags/${encodeURIComponent(t)}/`)}
+          href={withBase(`/tags/${slugify(t)}/`)}
           class={`post-badge post-badge-link ${t === currentTag ? 'current' : ''}`}
         >
           {t}
         </a>
       ))}
+
+    {showTags && tagsAll.length > maxTags && (
+      <span class="post-badge post-badge-muted">+{tagsAll.length - maxTags}</span>
+    )}
   </div>
 </li>
 
@@ -78,6 +128,19 @@ const href = withBase(`blog/${post.id}/`);
   .title-link {
     text-decoration: none;
     color: inherit;
+  }
+
+  .post-image {
+    display: block;
+    margin: 0 0 0.65rem 0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .post-image :global(img) {
+    width: 100%;
+    height: auto;
+    display: block;
   }
 
   .post-title {
@@ -132,5 +195,10 @@ const href = withBase(`blog/${post.id}/`);
   .post-badge.current {
     background-color: #333;
     color: #fff;
+  }
+
+  .post-badge-muted {
+    background: #f0f0f0;
+    color: #666;
   }
 </style>

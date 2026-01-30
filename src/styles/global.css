@@ -55,6 +55,24 @@ body {
 	line-height: 1.7;
 }
 
+.skip-link {
+	position: absolute;
+	left: 0.75rem;
+	top: 0.75rem;
+	padding: 0.5rem 0.75rem;
+	background: #111;
+	color: #fff;
+	border-radius: 6px;
+	text-decoration: none;
+	transform: translateY(-200%);
+	transition: transform 0.2s ease;
+	z-index: 1000;
+}
+
+.skip-link:focus {
+	transform: translateY(0);
+}
+
 main {
 	width: 720px;
 	max-width: calc(100% - 2em);

@@ -1,0 +1,91 @@
+---
+interface Metric {
+  name: string;        // 指标名
+  change?: string;     // 变化（+5%、-3%）
+  meaning?: string;    // 运营解读
+}
+
+interface Props {
+  title?: string;
+  metrics: Metric[];
+}
+
+const { title = "📊 指标变化", metrics = [] } = Astro.props;
+---
+
+<section class="metrics">
+  <h2 class="metrics-title">{title}</h2>
+
+  {metrics.length > 0 ? (
+    <table class="metrics-table">
+      <thead>
+        <tr>
+          <th>指标</th>
+          <th>变化</th>
+          <th>运营解读</th>
+        </tr>
+      </thead>
+      <tbody>
+        {metrics.map((m) => (
+          <tr>
+            <td class="metric-name">{m.name}</td>
+            <td class="metric-change">{m.change ?? "—"}</td>
+            <td class="metric-meaning">{m.meaning ?? "暂无说明"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  ) : (
+    <p class="empty">暂无指标数据</p>
+  )}
+</section>
+
+<style>
+  .metrics {
+    margin: 2rem 0;
+    padding: 1.25rem;
+    border: 1px solid #eee;
+    border-radius: 14px;
+    background: #fff;
+  }
+
+  .metrics-title {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+  }
+
+  .metrics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  .metrics-table th,
+  .metrics-table td {
+    border: 1px solid #e6e6e6;
+    padding: 0.75rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .metrics-table th {
+    background: #fafafa;
+    font-weight: 600;
+  }
+
+  .metric-change {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .empty {
+    color: #666;
+    margin: 0;
+  }
+
+  @media (max-width: 720px) {
+    .metrics-table {
+      font-size: 0.85rem;
+    }
+  }
+</style>

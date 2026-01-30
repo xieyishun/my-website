@@ -1,129 +1,218 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
-import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
 import PostCard from '../../components/PostCard.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
+import '../../styles/blog-index.css';
 
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+const posts = (await getCollection('blog'))
+  .slice()
+  .sort((a, b) => {
+    const ad = (a.data.updatedDate ?? a.data.pubDate).valueOf();
+    const bd = (b.data.updatedDate ?? b.data.pubDate).valueOf();
+    return bd - ad;
+  });
+
+// ✅ 从文章中提取 option（避免写死）
+const typeSet = new Set<string>();
+const gameSet = new Set<string>();
+const regionSet = new Set<string>();
+
+for (const p of posts) {
+  if (p.data.type) typeSet.add(String(p.data.type));
+  if (p.data.game) gameSet.add(String(p.data.game));
+  const regions =
+    Array.isArray((p.data as any).regions) ? (p.data as any).regions :
+    Array.isArray((p.data as any).region) ? (p.data as any).region :
+    [];
+  for (const r of regions) regionSet.add(String(r));
+}
+
+const typeOptions = Array.from(typeSet).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+const gameOptions = Array.from(gameSet).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+const regionOptions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'zh-CN'));
 ---
 
 <!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			main {
-				width: 960px;
-			}
-			ul {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 2rem;
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
-			}
-			ul li {
-				width: calc(50% - 1rem);
-			}
-			ul li * {
-				text-decoration: none;
-				transition: 0.2s ease;
-			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			}
-			ul li a {
-				display: block;
-			}
-			.title {
-				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
-			}
-			.post-meta {
-				margin-top: 0.4rem;
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.4rem 0.75rem;
-				align-items: center;
-				color: rgb(var(--gray));
-				font-size: 0.9rem;
-			}
-			.date {
-				margin: 0;
-				color: rgb(var(--gray));
-			}
-			.post-description {
-				margin: 0.5rem 0 0;
-				color: rgb(var(--gray-dark));
-			}
-			.post-tags {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.4rem;
-				margin-top: 0.5rem;
-			}
-			.post-tag {
-				display: inline-block;
-				padding: 0.15rem 0.6rem;
-				background-color: #f0f0f0;
-				border-radius: 999px;
-				font-size: 0.75rem;
-				color: #333;
-			}
-			ul li a:hover .post-title,
-			ul li a:hover .post-meta {
-				color: rgb(var(--accent));
-			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
-			}
-			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
-				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
-				}
-			}
-		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<section>
-				<ul>
-					{
-				posts.map((post) => <PostCard post={post} showImage={true} wrapLink={true} />)
-			}
-				</ul>
-			</section>
-		</main>
-		<Footer />
-	</body>
-</html>
+<html lang="zh-CN">
+  <head>
+    <BaseHead title={`Blog | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+  </head>
 
+  <body>
+    <Header />
+
+    <main id="main-content">
+      <h1>全部文章</h1>
+      <p style="color:#666;">支持关键词搜索 + 类型/游戏/地区筛选 + 排序（纯前端，不影响静态构建）</p>
+
+      <!-- ✅ 这些 id 必须存在：q/type/game/region/sort -->
+      <div class="toolbar">
+        <div class="field">
+          <label for="q">搜索</label>
+          <input id="q" type="search" placeholder="标题 / 摘要 / 标签…" aria-label="搜索文章" />
+        </div>
+
+        <div class="field">
+          <label for="type">类型</label>
+          <select id="type">
+            <option value="all">全部</option>
+            {typeOptions.map((t) => <option value={t}>{t}</option>)}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="game">游戏</label>
+          <select id="game">
+            <option value="all">全部</option>
+            {gameOptions.map((g) => <option value={g}>{g}</option>)}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="region">地区</label>
+          <select id="region">
+            <option value="all">全部</option>
+            {regionOptions.map((r) => <option value={r}>{r}</option>)}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="sort">排序</label>
+          <select id="sort">
+            <option value="new">最新发布</option>
+            <option value="old">最早发布</option>
+            <option value="updated">最近更新</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="meta">
+        <span id="count">共 {posts.length} 篇</span>
+      </div>
+
+      {posts.length > 0 ? (
+        <ul class="list" id="list">
+          {posts.map((post) => (
+            <PostCard post={post} showTags={true} />
+          ))}
+        </ul>
+      ) : (
+        <div class="empty">暂无文章</div>
+      )}
+    </main>
+
+    <Footer />
+
+    <script>
+      // —— 纯前端筛选/排序：不影响静态构建 ——
+
+      /** @param {string} id */
+      const getEl = (id) => document.getElementById(id);
+
+      const qEl = /** @type {HTMLInputElement | null} */ (getEl("q"));
+      const typeEl = /** @type {HTMLSelectElement | null} */ (getEl("type"));
+      const gameEl = /** @type {HTMLSelectElement | null} */ (getEl("game"));
+      const regionEl = /** @type {HTMLSelectElement | null} */ (getEl("region"));
+      const sortEl = /** @type {HTMLSelectElement | null} */ (getEl("sort"));
+      const countEl = /** @type {HTMLElement | null} */ (getEl("count"));
+      const listEl = /** @type {HTMLElement | null} */ (getEl("list"));
+
+      // 任意一个没找到就直接退出（避免 null 报错 + TS 红线）
+      if (!qEl || !typeEl || !gameEl || !regionEl || !sortEl || !countEl || !listEl) {
+        console.warn("[blog] Missing filter DOM elements.");
+      } else {
+        // 读取 querystring 初始化
+        const params = new URLSearchParams(location.search);
+
+        /**
+         * @param {HTMLInputElement | HTMLSelectElement} el
+         * @param {string} key
+         * @param {string} fallback
+         */
+        const init = (el, key, fallback = "") => {
+          const v = params.get(key);
+          if (v != null) el.value = v;
+          else if (fallback) el.value = fallback;
+        };
+
+        init(qEl, "q", "");
+        init(typeEl, "type", "all");
+        init(gameEl, "game", "all");
+        init(regionEl, "region", "all");
+        init(sortEl, "sort", "new");
+
+      // 把每个卡片的数据抽出来（一次性读取 DOM）
+      const items = Array.from(listEl.querySelectorAll("li.post-card")).map((node) => {
+        const li = /** @type {HTMLElement} */ (node);
+        const title = li.querySelector(".post-title")?.textContent?.trim() ?? "";
+        const desc = li.querySelector(".post-desc")?.textContent?.trim() ?? "";
+        const badges = Array.from(li.querySelectorAll(".post-badge")).map(
+          (b) => b.textContent?.trim() ?? ""
+        );
+
+        const pub = Number(li.dataset.pub || 0);
+        const updated = Number(li.dataset.updated || 0);
+        const type = li.dataset.type || "analysis";
+        const game = li.dataset.game || "";
+        const regions = (li.dataset.regions || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        const hay = `${title}\n${desc}\n${badges.join(" ")}`.toLowerCase();
+        return { li, pub, updated, hay, type, game, regions };
+      });
+
+        const apply = () => {
+          const q = (qEl.value || "").trim().toLowerCase();
+          const type = typeEl.value;
+          const game = gameEl.value;
+          const region = regionEl.value;
+          const sort = sortEl.value;
+
+          // 更新 URL（不刷新）
+          const next = new URLSearchParams();
+          if (q) next.set("q", qEl.value.trim());
+          if (type !== "all") next.set("type", type);
+          if (game !== "all") next.set("game", game);
+          if (region !== "all") next.set("region", region);
+          if (sort !== "new") next.set("sort", sort);
+
+          const url = `${location.pathname}${next.toString() ? "?" + next.toString() : ""}`;
+          history.replaceState(null, "", url);
+
+          // 筛选
+          const filtered = items.filter((it) => {
+            if (q && !it.hay.includes(q)) return false;
+            if (type !== "all" && it.type !== type) return false;
+            if (game !== "all" && it.game !== game) return false;
+            if (region !== "all" && !it.regions.includes(region)) return false;
+            return true;
+          });
+
+          // 排序
+          const order = [...filtered];
+          if (sort === "new") order.sort((a, b) => b.pub - a.pub);
+          else if (sort === "old") order.sort((a, b) => a.pub - b.pub);
+          else if (sort === "updated")
+            order.sort((a, b) => (b.updated || b.pub) - (a.updated || a.pub));
+
+          // 重新挂载 DOM（DocumentFragment 避免多次重排）
+          const frag = document.createDocumentFragment();
+          for (const it of order) frag.appendChild(it.li);
+          listEl.replaceChildren(frag);
+
+          countEl.textContent = `共 ${filtered.length} 篇`;
+        };
+
+        qEl.addEventListener("input", apply);
+        [typeEl, gameEl, regionEl, sortEl].forEach((el) => el.addEventListener("change", apply));
+
+        apply();
+      }
+    </script>
+  </body>
+</html>

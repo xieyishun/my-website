@@ -1,0 +1,59 @@
+main {
+  width: 960px;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
+  gap: 0.75rem;
+  align-items: end;
+  margin: 1rem 0 1.25rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin: 0.25rem 0 1rem;
+  color: #666;
+}
+
+ul.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.empty {
+  color: #666;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+@media (max-width: 720px) {
+  main {
+    width: 100%;
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+}

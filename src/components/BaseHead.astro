@@ -13,42 +13,49 @@ interface Props {
   image?: ImageMetadata;
 }
 
-const canonicalURL = Astro.site ? new URL(Astro.url.pathname, Astro.site) : undefined;
-// If `Astro.site` is missing, fall back to a base-aware relative path.
-const ogUrl = canonicalURL ? canonicalURL : withBase('');
+const baseUrl = import.meta.env.BASE_URL || '/';
+const baseNoTrailing = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+const currentPath = Astro.url?.pathname ?? '/';
+const pathWithoutBase =
+  baseNoTrailing && baseNoTrailing !== '/' && currentPath.startsWith(baseNoTrailing)
+    ? currentPath.slice(baseNoTrailing.length) || '/'
+    : currentPath;
+const canonicalURL = Astro.site ? new URL(currentPath, Astro.site) : undefined;
+const canonicalHref = canonicalURL ? canonicalURL.toString() : withBase(pathWithoutBase);
 
 const { title, description, image = FallbackImage } = Astro.props;
 ---
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#ffffff" />
 
-<link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
-<link rel="sitemap" href={withBase('sitemap-index.xml')} />
+<link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
+<link rel="sitemap" href={withBase('/sitemap.xml')} />
 
 <link
   rel="alternate"
   type="application/rss+xml"
   title={SITE_TITLE}
-  href={Astro.site ? new URL('rss.xml', Astro.site) : withBase('rss.xml')}
+  href={Astro.site ? new URL('rss.xml', Astro.site) : withBase('/rss.xml')}
 />
 
 <meta name="generator" content={Astro.generator} />
-
-{canonicalURL && <link rel="canonical" href={canonicalURL} />}
+<link rel="canonical" href={canonicalHref} />
 
 <title>{title}</title>
 <meta name="title" content={title} />
 <meta name="description" content={description} />
 
 <meta property="og:type" content="website" />
-<meta property="og:url" content={ogUrl} />
+<meta property="og:site_name" content={SITE_TITLE} />
+<meta property="og:url" content={canonicalHref} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-<meta property="og:image" content={Astro.site ? new URL(image.src, Astro.site) : image.src} />
+<meta property="og:image" content={Astro.site ? new URL(image.src, Astro.site) : withBase(image.src)} />
 
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:url" content={ogUrl} />
+<meta property="twitter:url" content={canonicalHref} />
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
-<meta property="twitter:image" content={Astro.site ? new URL(image.src, Astro.site) : image.src} />
+<meta property="twitter:image" content={Astro.site ? new URL(image.src, Astro.site) : withBase(image.src)} />
