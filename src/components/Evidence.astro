@@ -1,4 +1,6 @@
 ---
+import { withBase } from '../utils/url';
+
 interface Source {
   title: string;
   url: string;
@@ -12,6 +14,11 @@ interface Props {
 }
 
 const { sources = [] } = Astro.props;
+
+const toHref = (url: string) =>
+  url.startsWith('http://') || url.startsWith('https://')
+    ? url
+    : withBase(url.startsWith('/') ? url : `/${url}`);
 ---
 
 <section class="evidence">
@@ -26,7 +33,7 @@ const { sources = [] } = Astro.props;
             {s.region && <span class="badge region">{s.region}</span>}
           </div>
 
-          <a class="evidence-link" href={s.url} target="_blank">
+          <a class="evidence-link" href={toHref(s.url)} target="_blank" rel="noopener noreferrer">
             {s.title}
           </a>
 
