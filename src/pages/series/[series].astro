@@ -5,97 +5,85 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import PostCard from '../../components/PostCard.astro';
 import { withBase } from '../../utils/url';
-import { slugify } from '../../utils/slug';
 import { SITE_TITLE } from '../../consts';
 
 export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	const set = new Set<string>();
+  const posts = await getCollection('blog');
+  const set = new Set<string>();
 
-	for (const p of posts) {
-		for (const s of (p.data.series ?? [])) {
-			const name = String(s).trim();
-			if (name) set.add(name);
-		}
-	}
+  for (const p of posts) {
+    for (const s of (p.data.series ?? [])) {
+      const series = String(s).trim();
+      if (series) set.add(series);
+    }
+  }
 
-	return Array.from(set).flatMap((name) => {
-		const slug = slugify(name);
-		const paths = [
-			{ params: { series: slug }, props: { name, slug, legacy: false } },
-		];
-		if (name !== slug) {
-			paths.push({ params: { series: name }, props: { name, slug, legacy: true } });
-		}
-		return paths;
-	});
+  return Array.from(set).map((series) => ({
+    params: { series: encodeURIComponent(series) }, // ✅ 必须叫 series
+    props: { series },
+  }));
 }
 
-const { name, slug, legacy = false } = Astro.props as {
-	name: string;
-	slug: string;
-	legacy?: boolean;
-};
-const redirectTo = legacy ? withBase(`/series/${slug}/`) : '';
+const { series } = Astro.props as { series: string };
 
 const posts = (await getCollection('blog'))
-	.slice()
-	.sort((a, b) => {
-		const ad = (a.data.updatedDate ?? a.data.pubDate).valueOf();
-		const bd = (b.data.updatedDate ?? b.data.pubDate).valueOf();
-		return bd - ad;
-	});
+  .slice()
+  .sort((a, b) => {
+    const ad = (a.data.updatedDate ?? a.data.pubDate).valueOf();
+    const bd = (b.data.updatedDate ?? b.data.pubDate).valueOf();
+    return bd - ad;
+  });
 
 const seriesPosts = posts.filter((p) => {
-	const seriesList = (p.data.series ?? []).map((x) => String(x).trim());
-	return seriesList.includes(name);
+  const list = (p.data.series ?? []).map((x) => String(x).trim());
+  return list.includes(series);
 });
 ---
 
-{redirectTo ? (
-	<!doctype html>
-	<html lang="zh-CN">
-		<head>
-			<meta charset="utf-8" />
-			<meta http-equiv="refresh" content={`0; url=${redirectTo}`} />
-			<link rel="canonical" href={redirectTo} />
-			<title>Redirecting...</title>
-		</head>
-		<body>
-			<p>Redirecting to <a href={redirectTo}>{redirectTo}</a></p>
-		</body>
-	</html>
-) : (
-	<!doctype html>
-	<html lang="zh-CN">
-		<head>
-			<BaseHead title={`${name} | Series | ${SITE_TITLE}`} description={`专题：${name}`} />
-			<style>
-				main { width: 960px; }
-				.back { display: inline-block; margin: 1rem 0; text-decoration: none; color: rgb(var(--accent)); }
-				.back:hover { text-decoration: underline; }
-				.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
-				@media (max-width: 720px) { main { width: 100%; } }
-			</style>
-		</head>
-		<body>
-			<Header />
-			<main id="main-content">
-				<a class="back" href={withBase('/series/')}>← 返回专题列表</a>
-				<h1>{name}</h1>
-				<p style="color:#666;">共 {seriesPosts.length} 篇</p>
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <BaseHead title={`${series} | Series | ${SITE_TITLE}`} description={`专题：${series}`} />
+    <style>
+      main { width: 960px; }
+      .back {
+        display: inline-block;
+        margin: 1rem 0;
+        text-decoration: none;
+        color: rgb(var(--accent));
+      }
+      .back:hover { text-decoration: underline; }
+      .list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 1.25rem;
+      }
+      .empty { color:#666; text-align:center; padding: 2rem 0; }
+      @media (max-width: 720px) { main { width: 100%; } }
+    </style>
+  </head>
 
-				{seriesPosts.length > 0 ? (
-					<ul class="list">
-						{seriesPosts.map((post) => (
-							<li><PostCard post={post} showTags={true} /></li>
-						))}
-					</ul>
-				) : (
-					<p style="color:#666;">暂无文章</p>
-				)}
-			</main>
-			<Footer />
-		</body>
-	</html>
-)}
+  <body>
+    <Header />
+
+    <main>
+      <a class="back" href={withBase('/series/')}>← 返回专题列表</a>
+      <h1>{series}</h1>
+      <p style="color:#666;">共 {seriesPosts.length} 篇</p>
+
+      {seriesPosts.length > 0 ? (
+        <ul class="list">
+          {seriesPosts.map((post) => (
+            <PostCard post={post} showTags={true} />
+          ))}
+        </ul>
+      ) : (
+        <div class="empty">暂无文章</div>
+      )}
+    </main>
+
+    <Footer />
+  </body>
+</html>

@@ -48,7 +48,6 @@ const regionOptions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'z
       <h1>全部文章</h1>
       <p style="color:#666;">支持关键词搜索 + 类型/游戏/地区筛选 + 排序（纯前端，不影响静态构建）</p>
 
-      <!-- ✅ 这些 id 必须存在：q/type/game/region/sort -->
       <div class="toolbar">
         <div class="field">
           <label for="q">搜索</label>
@@ -57,7 +56,7 @@ const regionOptions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'z
 
         <div class="field">
           <label for="type">类型</label>
-          <select id="type">
+          <select id="type" aria-label="按类型筛选">
             <option value="all">全部</option>
             {typeOptions.map((t) => <option value={t}>{t}</option>)}
           </select>
@@ -65,7 +64,7 @@ const regionOptions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'z
 
         <div class="field">
           <label for="game">游戏</label>
-          <select id="game">
+          <select id="game" aria-label="按游戏筛选">
             <option value="all">全部</option>
             {gameOptions.map((g) => <option value={g}>{g}</option>)}
           </select>
@@ -73,7 +72,7 @@ const regionOptions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'z
 
         <div class="field">
           <label for="region">地区</label>
-          <select id="region">
+          <select id="region" aria-label="按地区筛选">
             <option value="all">全部</option>
             {regionOptions.map((r) => <option value={r}>{r}</option>)}
           </select>
@@ -81,7 +80,7 @@ const regionOptions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'z
 
         <div class="field">
           <label for="sort">排序</label>
-          <select id="sort">
+          <select id="sort" aria-label="排序方式">
             <option value="new">最新发布</option>
             <option value="old">最早发布</option>
             <option value="updated">最近更新</option>
@@ -120,7 +119,6 @@ const regionOptions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'z
       const countEl = /** @type {HTMLElement | null} */ (getEl("count"));
       const listEl = /** @type {HTMLElement | null} */ (getEl("list"));
 
-      // 任意一个没找到就直接退出（避免 null 报错 + TS 红线）
       if (!qEl || !typeEl || !gameEl || !regionEl || !sortEl || !countEl || !listEl) {
         console.warn("[blog] Missing filter DOM elements.");
       } else {
@@ -144,30 +142,45 @@ const regionOptions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'z
         init(regionEl, "region", "all");
         init(sortEl, "sort", "new");
 
-      // 把每个卡片的数据抽出来（一次性读取 DOM）
-      const items = Array.from(listEl.querySelectorAll("li.post-card")).map((node) => {
-        const li = /** @type {HTMLElement} */ (node);
-        const title = li.querySelector(".post-title")?.textContent?.trim() ?? "";
-        const desc = li.querySelector(".post-desc")?.textContent?.trim() ?? "";
-        const badges = Array.from(li.querySelectorAll(".post-badge")).map(
-          (b) => b.textContent?.trim() ?? ""
-        );
+        // ✅ 一次性读取 DOM / dataset，后续不再 querySelectorAll
+        const items = Array.from(listEl.querySelectorAll("li.post-card")).map((node) => {
+          const li = /** @type {HTMLElement} */ (node);
 
-        const pub = Number(li.dataset.pub || 0);
-        const updated = Number(li.dataset.updated || 0);
-        const type = li.dataset.type || "analysis";
-        const game = li.dataset.game || "";
-        const regions = (li.dataset.regions || "")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
+          const title = li.querySelector(".post-title")?.textContent?.trim() ?? "";
+          const desc = li.querySelector(".post-desc")?.textContent?.trim() ?? "";
+          const badges = Array.from(li.querySelectorAll(".post-badge")).map(
+            (b) => b.textContent?.trim() ?? ""
+          );
 
-        const hay = `${title}\n${desc}\n${badges.join(" ")}`.toLowerCase();
-        return { li, pub, updated, hay, type, game, regions };
-      });
+          const pub = Number(li.dataset.pub || 0);
+          const updated = Number(li.dataset.updated || 0);
+
+          const type = li.dataset.type || "analysis";
+          const game = li.dataset.game || "";
+          const regions = (li.dataset.regions || "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+
+          const hay = `${title}\n${desc}\n${badges.join(" ")}`.toLowerCase();
+          return { li, pub, updated, hay, type, game, regions };
+        });
+
+        // ✅ debounce：避免输入时频繁重排
+        const debounce = (fn, ms = 120) => {
+          let t = 0;
+          return (...args) => {
+            clearTimeout(t);
+            t = setTimeout(() => fn(...args), ms);
+          };
+        };
+
+        // ✅ 记住上一次排序结果签名；不变就不重排 DOM
+        let lastSig = "";
 
         const apply = () => {
-          const q = (qEl.value || "").trim().toLowerCase();
+          const qRaw = (qEl.value || "").trim();
+          const q = qRaw.toLowerCase();
           const type = typeEl.value;
           const game = gameEl.value;
           const region = regionEl.value;
@@ -175,41 +188,57 @@ const regionOptions = Array.from(regionSet).sort((a, b) => a.localeCompare(b, 'z
 
           // 更新 URL（不刷新）
           const next = new URLSearchParams();
-          if (q) next.set("q", qEl.value.trim());
+          if (qRaw) next.set("q", qRaw);
           if (type !== "all") next.set("type", type);
           if (game !== "all") next.set("game", game);
           if (region !== "all") next.set("region", region);
           if (sort !== "new") next.set("sort", sort);
 
-          const url = `${location.pathname}${next.toString() ? "?" + next.toString() : ""}`;
-          history.replaceState(null, "", url);
+          const nextQs = next.toString();
+          const nextUrl = `${location.pathname}${nextQs ? "?" + nextQs : ""}`;
+          if (nextUrl !== location.pathname + location.search) {
+            history.replaceState(null, "", nextUrl);
+          }
 
-          // 筛选
-          const filtered = items.filter((it) => {
-            if (q && !it.hay.includes(q)) return false;
-            if (type !== "all" && it.type !== type) return false;
-            if (game !== "all" && it.game !== game) return false;
-            if (region !== "all" && !it.regions.includes(region)) return false;
-            return true;
+          // 过滤（减少临时对象创建）
+          const filtered = [];
+          for (const it of items) {
+            if (q && !it.hay.includes(q)) continue;
+            if (type !== "all" && it.type !== type) continue;
+            if (game !== "all" && it.game !== game) continue;
+            if (region !== "all" && !it.regions.includes(region)) continue;
+            filtered.push(it);
+          }
+
+          // 排序（就地排序）
+          filtered.sort((a, b) => {
+            if (sort === "old") return a.pub - b.pub;
+            if (sort === "updated") {
+              const au = a.updated || a.pub;
+              const bu = b.updated || b.pub;
+              return bu - au;
+            }
+            return b.pub - a.pub; // new
           });
 
-          // 排序
-          const order = [...filtered];
-          if (sort === "new") order.sort((a, b) => b.pub - a.pub);
-          else if (sort === "old") order.sort((a, b) => a.pub - b.pub);
-          else if (sort === "updated")
-            order.sort((a, b) => (b.updated || b.pub) - (a.updated || a.pub));
-
-          // 重新挂载 DOM（DocumentFragment 避免多次重排）
-          const frag = document.createDocumentFragment();
-          for (const it of order) frag.appendChild(it.li);
-          listEl.replaceChildren(frag);
+          // 只有顺序变了才重排 DOM
+          const sig = filtered.map((x) => x.pub + ":" + (x.updated || 0)).join("|");
+          if (sig !== lastSig) {
+            lastSig = sig;
+            const frag = document.createDocumentFragment();
+            for (const it of filtered) frag.appendChild(it.li);
+            listEl.replaceChildren(frag);
+          }
 
           countEl.textContent = `共 ${filtered.length} 篇`;
         };
 
-        qEl.addEventListener("input", apply);
-        [typeEl, gameEl, regionEl, sortEl].forEach((el) => el.addEventListener("change", apply));
+        const applyDebounced = debounce(apply, 120);
+
+        qEl.addEventListener("input", applyDebounced);
+        [typeEl, gameEl, regionEl, sortEl].forEach((el) =>
+          el.addEventListener("change", apply)
+        );
 
         apply();
       }

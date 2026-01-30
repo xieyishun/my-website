@@ -5,92 +5,85 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import PostCard from '../../components/PostCard.astro';
 import { withBase } from '../../utils/url';
-import { slugify } from '../../utils/slug';
 import { SITE_TITLE } from '../../consts';
 
 export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	const set = new Set<string>();
+  const posts = await getCollection('blog');
+  const set = new Set<string>();
 
-	for (const p of posts) {
-		for (const t of (p.data.tags ?? [])) {
-			const tag = String(t).trim();
-			if (tag) set.add(tag);
-		}
-	}
+  for (const p of posts) {
+    for (const t of (p.data.tags ?? [])) {
+      const tag = String(t).trim();
+      if (tag) set.add(tag);
+    }
+  }
 
-	return Array.from(set).flatMap((tag) => {
-		const slug = slugify(tag);
-		const paths = [{ params: { tag: slug }, props: { tag, slug, legacy: false } }];
-		if (tag !== slug) {
-			paths.push({ params: { tag }, props: { tag, slug, legacy: true } });
-		}
-		return paths;
-	});
+  return Array.from(set).map((tag) => ({
+    params: { tag: encodeURIComponent(tag) },
+    props: { tag },
+  }));
 }
 
-const { tag, slug, legacy = false } = Astro.props as {
-	tag: string;
-	slug: string;
-	legacy?: boolean;
-};
-const redirectTo = legacy ? withBase(`/tags/${slug}/`) : '';
+const { tag } = Astro.props as { tag: string };
 
 const posts = (await getCollection('blog'))
-	.slice()
-	.sort((a, b) => {
-		const ad = (a.data.updatedDate ?? a.data.pubDate).valueOf();
-		const bd = (b.data.updatedDate ?? b.data.pubDate).valueOf();
-		return bd - ad;
-	});
+  .slice()
+  .sort((a, b) => {
+    const ad = (a.data.updatedDate ?? a.data.pubDate).valueOf();
+    const bd = (b.data.updatedDate ?? b.data.pubDate).valueOf();
+    return bd - ad;
+  });
 
-const tagPosts = posts.filter((p) => (p.data.tags ?? []).map((x) => String(x).trim()).includes(tag));
+const tagPosts = posts.filter((p) => {
+  const tags = (p.data.tags ?? []).map((x) => String(x).trim());
+  return tags.includes(tag);
+});
 ---
 
-{redirectTo ? (
-	<!doctype html>
-	<html lang="zh-CN">
-		<head>
-			<meta charset="utf-8" />
-			<meta http-equiv="refresh" content={`0; url=${redirectTo}`} />
-			<link rel="canonical" href={redirectTo} />
-			<title>Redirecting...</title>
-		</head>
-		<body>
-			<p>Redirecting to <a href={redirectTo}>{redirectTo}</a></p>
-		</body>
-	</html>
-) : (
-	<!doctype html>
-	<html lang="zh-CN">
-		<head>
-			<BaseHead title={`${tag} | Tags | ${SITE_TITLE}`} description={`标签：${tag}`} />
-			<style>
-				main { width: 960px; }
-				.back { display: inline-block; margin: 1rem 0; text-decoration: none; color: rgb(var(--accent)); }
-				.back:hover { text-decoration: underline; }
-				.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
-				@media (max-width: 720px) { main { width: 100%; } }
-			</style>
-		</head>
-		<body>
-			<Header />
-			<main id="main-content">
-				<a class="back" href={withBase('/tags/')}>← 返回标签列表</a>
-				<h1>{tag}</h1>
-				<p style="color:#666;">共 {tagPosts.length} 篇</p>
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <BaseHead title={`${tag} | Tags | ${SITE_TITLE}`} description={`标签：${tag}`} />
+    <style>
+      main { width: 960px; }
+      .back {
+        display: inline-block;
+        margin: 1rem 0;
+        text-decoration: none;
+        color: rgb(var(--accent));
+      }
+      .back:hover { text-decoration: underline; }
+      .list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 1.25rem;
+      }
+      .empty { color:#666; text-align:center; padding: 2rem 0; }
+      @media (max-width: 720px) { main { width: 100%; } }
+    </style>
+  </head>
 
-				{tagPosts.length > 0 ? (
-					<ul class="list">
-						{tagPosts.map((post) => (
-							<li><PostCard post={post} showTags={true} /></li>
-						))}
-					</ul>
-				) : (
-					<p style="color:#666;">暂无文章</p>
-				)}
-			</main>
-			<Footer />
-		</body>
-	</html>
-)}
+  <body>
+    <Header />
+
+    <main>
+      <a class="back" href={withBase('/tags/')}>← 返回标签列表</a>
+      <h1>{tag}</h1>
+      <p style="color:#666;">共 {tagPosts.length} 篇</p>
+
+      {tagPosts.length > 0 ? (
+        <ul class="list">
+          {tagPosts.map((post) => (
+            <PostCard post={post} showTags={true} currentTag={tag} />
+          ))}
+        </ul>
+      ) : (
+        <div class="empty">暂无文章</div>
+      )}
+    </main>
+
+    <Footer />
+  </body>
+</html>

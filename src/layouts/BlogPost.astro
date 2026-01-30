@@ -1,97 +1,175 @@
 ---
-import { Picture } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
-import Header from '../components/Header.astro';
+import { withBase } from '../utils/url';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
-type Props = CollectionEntry<'blog'>['data'];
+type BlogPost = CollectionEntry<'blog'>;
 
-const { title, description, pubDate, updatedDate, heroImage, image } = Astro.props;
-const coverImage = image ?? heroImage;
+interface Props {
+  // ✅ 允许不传（因为你有页面复用了这个 layout）
+  post?: BlogPost;
+  title?: string;
+  description?: string;
+}
+
+const { post, title, description } = Astro.props;
+
+// ✅ 非文章页兜底：给普通页面一个合理 title/description
+const pageTitle = post?.data?.title
+  ? `${post.data.title} | ${SITE_TITLE}`
+  : title
+  ? `${title} | ${SITE_TITLE}`
+  : SITE_TITLE;
+
+const pageDesc =
+  (post ? (String((post.data as any).summary ?? '').trim() || String((post.data as any).description ?? '').trim()) : '') ||
+  (description ?? '') ||
+  SITE_DESCRIPTION;
+
+// ✅ canonical：文章页用 /blog/slug/；普通页用当前 URL
+const canonical = post?.id
+  ? new URL(withBase(`/blog/${post.id}/`), Astro.site).toString()
+  : (Astro.url ? Astro.url.toString() : undefined);
+
+// ✅ 封面图（仅文章页）
+const cover = post ? String((post.data as any).image ?? '').trim() : '';
+const coverAlt = post
+  ? ((post.data as any).imageAlt ? String((post.data as any).imageAlt).trim() : String(post.data.title ?? '').trim())
+  : '';
+
+const isHttp = (s: string) => s.startsWith('http://') || s.startsWith('https://');
+const coverSrc =
+  cover
+    ? (isHttp(cover) ? cover : withBase(cover.startsWith('/') ? cover : `/${cover}`))
+    : '';
 ---
 
+<!doctype html>
 <html lang="zh-CN">
-	<head>
-		<BaseHead title={title} description={description} />
-		<style>
-			main {
-				width: calc(100% - 2em);
-				max-width: 100%;
-				margin: 0;
-			}
-			.hero-image {
-				width: 100%;
-			}
-			.hero-image img {
-				display: block;
-				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
-			}
-			.prose {
-				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
-			}
-			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
-				text-align: center;
-				line-height: 1;
-			}
-			.title h1 {
-				margin: 0 0 0.5em 0;
-			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
-			}
-			.last-updated-on {
-				font-style: italic;
-			}
-		</style>
-	</head>
+  <head>
+    <BaseHead title={pageTitle} description={pageDesc} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta name="theme-color" content="#ffffff" />
+  </head>
 
-	<body>
-		<Header />
-		<main id="main-content">
-			<article>
-				<div class="hero-image">
-					{coverImage && (
-						<Picture
-							width={1020}
-							height={510}
-							src={coverImage}
-							alt={title}
-							formats={['avif', 'webp']}
-							loading="lazy"
-							decoding="async"
-						/>
-					)}
-				</div>
-				<div class="prose">
-					<div class="title">
-						<div class="date">
-							<FormattedDate date={pubDate} />
-							{
-								updatedDate && (
-									<div class="last-updated-on">
-										Last updated on <FormattedDate date={updatedDate} />
-									</div>
-								)
-							}
-						</div>
-						<h1>{title}</h1>
-						<hr />
-					</div>
-					<slot />
-				</div>
-			</article>
-		</main>
-		<Footer />
-	</body>
+  <body>
+    <Header />
+
+    <main id="main-content" class="wrap">
+      {post ? (
+        <article class="post">
+          {coverSrc && (
+            <div class="cover-wrap">
+              <div class="cover">
+                <img
+                  class="cover-img"
+                  src={coverSrc}
+                  alt={coverAlt}
+                  loading="eager"
+                  decoding="async"
+                />
+              </div>
+            </div>
+          )}
+
+          <header class="post-header">
+            <h1 class="title">{post.data.title}</h1>
+
+            <div class="meta">
+              <span class="date">
+                <FormattedDate date={post.data.pubDate} />
+              </span>
+
+              {post.data.updatedDate && (
+                <span class="updated">
+                  更新于 <FormattedDate date={post.data.updatedDate} />
+                </span>
+              )}
+            </div>
+
+            {(post.data as any).description && (
+              <p class="desc">{String((post.data as any).description)}</p>
+            )}
+          </header>
+
+          <div class="content">
+            <slot />
+          </div>
+        </article>
+      ) : (
+        // ✅ 普通页面：仅渲染内容（不依赖 post）
+        <div class="page">
+          <slot />
+        </div>
+      )}
+    </main>
+
+    <Footer />
+
+    <style>
+      .wrap {
+        width: 960px;
+        margin: 0 auto;
+        padding: 2rem 0;
+      }
+
+      @media (max-width: 960px) {
+        .wrap {
+          width: 100%;
+          padding: 1.25rem 1rem;
+        }
+      }
+
+      /* ✅ 封面：预留尺寸，减少 CLS */
+      .cover-wrap {
+        margin: 0 0 1.25rem 0;
+      }
+      .cover {
+        width: 100%;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #f2f2f2;
+        aspect-ratio: 16 / 9;
+      }
+      .cover-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .post-header {
+        margin-bottom: 1.5rem;
+      }
+
+      .title {
+        margin: 0 0 0.75rem 0;
+        font-size: 2rem;
+        line-height: 1.25;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.9rem;
+        color: #666;
+        font-size: 0.95rem;
+      }
+
+      .desc {
+        margin: 0.9rem 0 0 0;
+        color: #555;
+        font-size: 1.05rem;
+        line-height: 1.7;
+      }
+
+      .content :global(p) {
+        line-height: 1.9;
+      }
+    </style>
+  </body>
 </html>

@@ -1,9 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
-import { Picture } from 'astro:assets';
 import FormattedDate from './FormattedDate.astro';
 import { withBase } from '../utils/url';
-import { slugify } from '../utils/slug';
 
 type TypeValue = 'note' | 'analysis' | 'report';
 
@@ -34,26 +32,36 @@ const typeLabel =
   typeValue in typeLabelMap ? typeLabelMap[typeValue as TypeValue] : String(typeValue ?? '');
 
 const game = (post.data.game ?? '').trim();
-const heroImage = post.data.image ?? post.data.heroImage;
 
-// ✅ 统一 regions：优先用 regions，其次兼容你之前的 region 字段
-const regions = Array.isArray((post.data as any).regions)
-  ? (post.data as any).regions
-  : Array.isArray((post.data as any).region)
-    ? (post.data as any).region
-    : [];
+// 兼容 region/regions 两种写法
+const regionsRaw =
+  Array.isArray((post.data as any).regions) ? (post.data as any).regions :
+  Array.isArray((post.data as any).region) ? (post.data as any).region :
+  [];
+const regions = regionsRaw.map((x: any) => String(x).trim()).filter(Boolean);
 
 const tagsAll = Array.isArray(post.data.tags) ? post.data.tags : [];
 const tags = showTags ? tagsAll.slice(0, maxTags) : [];
 
 const summary = (post.data.summary ?? '').trim();
 const desc = (post.data.description ?? '').trim();
-
-// ✅ showSummary=false 时强制用 description；否则优先 summary
 const excerpt = showSummary ? (summary || desc) : desc;
 
-// ✅ 关键修复：withBase 参数统一用 “以 / 开头的站内绝对路径”
 const href = withBase(`/blog/${post.id}/`);
+
+// ✅ 封面图（可选，string）：推荐写 /covers/xxx.jpg 放 public/ 下
+const cover = String((post.data as any).image ?? '').trim();
+const coverAlt = (post.data as any).imageAlt
+  ? String((post.data as any).imageAlt).trim()
+  : String(post.data.title ?? '').trim();
+
+// ✅ 关键：兼容子路径 base
+// - 外链（http/https）原样用
+// - 站内路径（/covers/xx.jpg 或 covers/xx.jpg）自动 withBase
+const isHttp = (s: string) => s.startsWith('http://') || s.startsWith('https://');
+const coverSrc = cover
+  ? (isHttp(cover) ? cover : withBase(cover.startsWith('/') ? cover : `/${cover}`))
+  : '';
 ---
 
 <li
@@ -64,20 +72,21 @@ const href = withBase(`/blog/${post.id}/`);
   data-game={game}
   data-regions={regions.join(',')}
 >
-  <a class="title-link" href={href}>
-    {heroImage && (
-      <span class="post-image">
-        <Picture
-          src={heroImage}
-          width={640}
-          height={360}
-          alt={post.data.title}
-          formats={['avif', 'webp']}
+  {coverSrc && (
+    <a class="cover-link" href={href} aria-label={`打开文章：${post.data.title}`}>
+      <div class="cover">
+        <img
+          class="cover-img"
+          src={coverSrc}
+          alt={coverAlt}
           loading="lazy"
           decoding="async"
         />
-      </span>
-    )}
+      </div>
+    </a>
+  )}
+
+  <a class="title-link" href={href}>
     <h3 class="post-title">{post.data.title}</h3>
   </a>
 
@@ -104,7 +113,7 @@ const href = withBase(`/blog/${post.id}/`);
     {showTags &&
       tags.map((t) => (
         <a
-          href={withBase(`/tags/${slugify(t)}/`)}
+          href={withBase(`/tags/${encodeURIComponent(t)}/`)}
           class={`post-badge post-badge-link ${t === currentTag ? 'current' : ''}`}
         >
           {t}
@@ -125,22 +134,30 @@ const href = withBase(`/blog/${post.id}/`);
     background: #fff;
   }
 
+  /* ✅ 封面容器固定比例：减少 CLS */
+  .cover-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    margin: 0 0 0.85rem 0;
+  }
+  .cover {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f2f2f2;
+    aspect-ratio: 16 / 9;
+  }
+  .cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
   .title-link {
     text-decoration: none;
     color: inherit;
-  }
-
-  .post-image {
-    display: block;
-    margin: 0 0 0.65rem 0;
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .post-image :global(img) {
-    width: 100%;
-    height: auto;
-    display: block;
   }
 
   .post-title {
