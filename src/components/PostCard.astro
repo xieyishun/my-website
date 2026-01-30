@@ -1,149 +1,136 @@
 ---
-import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
 import FormattedDate from './FormattedDate.astro';
 import { withBase } from '../utils/url';
 
-const {
-	post,
-	showImage = false,
-	wrapLink = false,
-	showTags = false,
-	currentTag = '',
-} = Astro.props;
+type TypeValue = 'note' | 'analysis' | 'report';
 
-const slug = post.slug || post.id.replace(/\.mdx?$/, '');
-const href = withBase(`blog/${slug}/`);
-const summary = (post.data.summary ?? '').trim();
-const typeValue = typeof post.data.type === 'string' ? post.data.type : '';
-const typeLabelMap = {
-	note: 'Note',
-	analysis: 'Analysis',
-	report: 'Report',
+interface Props {
+  post: CollectionEntry<'blog'>;
+  showTags?: boolean;
+  currentTag?: string;
+}
+
+const { post, showTags = false, currentTag = '' } = Astro.props;
+
+const typeLabelMap: Record<TypeValue, string> = {
+  note: '笔记',
+  analysis: '分析',
+  report: '报告',
 };
-const typeLabel = typeLabelMap[typeValue as keyof typeof typeLabelMap] ?? '';
+
+const typeValue = (post.data.type ?? 'analysis') as TypeValue | string;
+const typeLabel =
+  typeValue in typeLabelMap ? typeLabelMap[typeValue as TypeValue] : String(typeValue ?? '');
+
 const game = (post.data.game ?? '').trim();
 const regions = Array.isArray(post.data.region) ? post.data.region : [];
 const tags = Array.isArray(post.data.tags) ? post.data.tags : [];
+
+const href = withBase(`blog/${post.id}/`);
 ---
 
-<li class="post-item">
-	{wrapLink ? (
-		<a href={href} class="post-link">
-			{showImage && post.data.heroImage && (
-				<Image width={720} height={360} src={post.data.heroImage} alt="" />
-			)}
-			<h2 class="post-title title">{post.data.title}</h2>
-			<div class="post-meta">
-				<span class="post-date">
-					<FormattedDate date={post.data.pubDate} />
-				</span>
-				{post.data.updatedDate && (
-					<span class="post-updated">
-						更新于 <FormattedDate date={post.data.updatedDate} />
-					</span>
-				)}
-			</div>
-			<div class="post-badges">
-				{typeLabel && <span class="post-badge">{typeLabel}</span>}
-				{game && <span class="post-badge">{game}</span>}
-				{regions.map((region, index) => (
-					<span class="post-badge" data-kind="region" data-value={region} key={index}>
-						{region}
-					</span>
-				))}
-				{showTags &&
-					tags.map((tag) => (
-						<a
-							href={withBase(`tags/${encodeURIComponent(tag)}/`)}
-							class={[
-								'post-badge',
-								'post-badge-link',
-								tag === currentTag ? 'current' : '',
-							]
-								.filter(Boolean)
-								.join(' ')}
-						>
-							{tag}
-						</a>
-					))}
-			</div>
-			{summary && <p class="post-description">{summary}</p>}
-		</a>
-	) : (
-		<>
-			{showImage && post.data.heroImage && (
-				<Image width={720} height={360} src={post.data.heroImage} alt="" />
-			)}
-			<h2 class="post-title title">
-				<a href={href}>{post.data.title}</a>
-			</h2>
-			<div class="post-meta">
-				<span class="post-date">
-					<FormattedDate date={post.data.pubDate} />
-				</span>
-				{post.data.updatedDate && (
-					<span class="post-updated">
-						更新于 <FormattedDate date={post.data.updatedDate} />
-					</span>
-				)}
-			</div>
-			<div class="post-badges">
-				{typeLabel && <span class="post-badge">{typeLabel}</span>}
-				{game && <span class="post-badge">{game}</span>}
-				{regions.map((region, index) => (
-					<span class="post-badge" data-kind="region" data-value={region} key={index}>
-						{region}
-					</span>
-				))}
-				{showTags &&
-					tags.map((tag) => (
-						<a
-							href={withBase(`tags/${encodeURIComponent(tag)}/`)}
-							class={[
-								'post-badge',
-								'post-badge-link',
-								tag === currentTag ? 'current' : '',
-							]
-								.filter(Boolean)
-								.join(' ')}
-						>
-							{tag}
-						</a>
-					))}
-			</div>
-			{summary && <p class="post-description">{summary}</p>}
-		</>
-	)}
+<li class="post-card">
+  <a class="title-link" href={href}>
+    <h3 class="post-title">{post.data.title}</h3>
+  </a>
 
+  <p class="post-desc">{post.data.description}</p>
+
+  <div class="post-meta">
+    <span class="post-date">
+      <FormattedDate date={post.data.pubDate} />
+    </span>
+    {post.data.updatedDate && (
+      <span class="post-updated">
+        更新于 <FormattedDate date={post.data.updatedDate} />
+      </span>
+    )}
+  </div>
+
+  <div class="post-badges">
+    {typeLabel && <span class="post-badge">{typeLabel}</span>}
+    {game && <span class="post-badge">{game}</span>}
+    {regions.map((r) => (
+      <span class="post-badge">{r}</span>
+    ))}
+
+    {showTags &&
+      tags.map((t) => (
+        <a
+          href={withBase(`tags/${encodeURIComponent(t)}/`)}
+          class={`post-badge post-badge-link ${t === currentTag ? 'current' : ''}`}
+        >
+          {t}
+        </a>
+      ))}
+  </div>
 </li>
 
 <style>
-	.post-badges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.4rem;
-		margin-top: 0.4rem;
-	}
-	.post-badge {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.15rem 0.6rem;
-		border-radius: 999px;
-		background-color: #f3f3f3;
-		color: #333;
-		font-size: 0.75rem;
-		line-height: 1.4;
-		transition: background-color 0.2s ease, color 0.2s ease;
-	}
-	.post-badge-link {
-		text-decoration: none;
-	}
-	.post-badge-link:hover {
-		background-color: #e7e7e7;
-	}
-	.post-badge.current {
-		background-color: #333;
-		color: #fff;
-	}
-</style>
+  .post-card {
+    padding: 1.2rem 1.1rem;
+    border: 1px solid #e9e9e9;
+    border-radius: 14px;
+    background: #fff;
+  }
 
+  .title-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .post-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    line-height: 1.25;
+  }
+
+  .post-desc {
+    margin: 0;
+    color: #555;
+    font-size: 0.98rem;
+    line-height: 1.7;
+  }
+
+  .post-meta {
+    margin-top: 0.65rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    color: #666;
+    font-size: 0.9rem;
+  }
+
+  .post-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+  }
+
+  .post-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background-color: #f3f3f3;
+    color: #333;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .post-badge-link {
+    text-decoration: none;
+  }
+
+  .post-badge:hover {
+    background-color: #e7e7e7;
+  }
+
+  .post-badge.current {
+    background-color: #333;
+    color: #fff;
+  }
+</style>

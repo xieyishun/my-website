@@ -14,6 +14,8 @@ tags: ["活动设计", "留存", "付费", "版本策略"]
 import Timeline from "../../components/Timeline.astro";
 import TLDR from "../../components/TLDR.astro";
 import Evidence from "../../components/Evidence.astro";
+import MetricsTable from "../../components/MetricsTable.astro";
+import InsightCallout from "../../components/InsightCallout.astro";
 
 ## TL;DR
 <TLDR
@@ -49,6 +51,7 @@ import Evidence from "../../components/Evidence.astro";
   ]}
 />
 
+## 证据（公告/补丁/社区讨论链接）
 <Evidence
   sources={[
     {
@@ -56,25 +59,24 @@ import Evidence from "../../components/Evidence.astro";
       url: "https://example.com/announcement",
       type: "官方公告",
       region: "CN",
-      note: "活动规则与奖励结构首次公布。",
+      note: "活动规则与奖励结构首次公布。"
     },
     {
       title: "补丁说明：版本更新日志 vX.Y",
       url: "https://example.com/patch-notes",
       type: "补丁说明",
       region: "JP",
-      note: "数值调整与卡池轮换信息。",
+      note: "数值调整与卡池轮换信息。"
     },
     {
       title: "社区讨论：Reddit 热帖反馈汇总",
       url: "https://reddit.com/example",
       type: "社区讨论",
       region: "EN",
-      note: "玩家对掉落异常的主要争议点。",
-    },
+      note: "玩家对掉落异常的主要争议点。"
+    }
   ]}
 />
-
 
 ## 分析（原因假设/运营目标/取舍）
 - 原因假设：为什么要做此改动/活动（示例）
@@ -82,15 +84,45 @@ import Evidence from "../../components/Evidence.astro";
 - 取舍：对体验/平衡/收益的权衡点（示例）
 
 ## 影响（玩家体验/付费/口碑/留存）
-- 玩家体验：正向/负向反馈（示例）
-- 付费：充值结构或转化变化（示例）
-- 口碑：社媒/社区讨论风向（示例）
-- 留存：D1/D7/D30 或回流表现（示例）
+<MetricsTable
+  metrics={[
+    {
+      name: "D1 留存",
+      change: "+5%",
+      meaning: "活动节奏更紧凑，新手更容易完成目标。"
+    },
+    {
+      name: "ARPPU",
+      change: "-3%",
+      meaning: "付费点争议较大，核心玩家观望。"
+    },
+    {
+      name: "舆情热度",
+      change: "↑",
+      meaning: "社区讨论集中在补偿是否公平。"
+    }
+  ]}
+/>
 
 ## 运营启发（可迁移结论，用列表）
-- 启发 1：可复用的玩法或运营策略（示例）
-- 启发 2：特定用户群的激励方式（示例）
-- 启发 3：长期版本节奏建议（示例）
+<InsightCallout
+  variant="insight"
+  title="运营启发（可迁移）"
+  items={[
+    "把“目标 → 路径 → 回报”做成可视化闭环，能显著提高任务完成率与短期留存。",
+    "补偿策略要和“损失感来源”对齐：数值损失用数值补偿，时间损失用加速/跳过补偿。",
+    "当争议不可避免时，优先保证规则一致性（解释清楚）比“给更多”更能稳住口碑。"
+  ]}
+/>
+
+<InsightCallout
+  variant="warning"
+  title="风险与代价（示例占位）"
+  items={[
+    "短期刺激（强付费/强投放）可能透支口碑，带来 D7/D30 回落风险。",
+    "频繁补偿会训练用户预期，后续活动需要更高成本维持满意度。"
+  ]}
+/>
 
 ## 附录（术语表/引用）
 - 术语：示例术语解释（示例）
