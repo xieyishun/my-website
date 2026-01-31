@@ -6,6 +6,7 @@ import Footer from '../../components/Footer.astro';
 import PostCard from '../../components/PostCard.astro';
 import { withBase } from '../../utils/url';
 import { SITE_TITLE } from '../../consts';
+import { slugify } from '../../utils/slug';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -19,14 +20,32 @@ export async function getStaticPaths() {
   }
 
   return Array.from(set).map((tag) => ({
-    params: { tag: encodeURIComponent(tag) },
+    params: { tag: slugify(tag) }, // ✅ 关键：用 slugify
     props: { tag },
   }));
 }
 
-const { tag } = Astro.props as { tag: string };
+const tagSlug = Astro.params.tag as string;
+const { tag: tagNameFromProps } = Astro.props as { tag: string };
 
-const posts = (await getCollection('blog'))
+// 反查：slug -> 原始 tag 名称（用于展示）
+const allPosts = await getCollection('blog');
+const nameBySlug = new Map<string, string>();
+
+for (const p of allPosts) {
+  for (const t of (p.data.tags ?? [])) {
+    const name = String(t).trim();
+    if (!name) continue;
+
+    const slug = slugify(name);
+    if (!nameBySlug.has(slug)) nameBySlug.set(slug, name);
+  }
+}
+
+const tag = nameBySlug.get(tagSlug) ?? tagNameFromProps;
+
+// 排序（跟你 series 保持一致）
+const posts = allPosts
   .slice()
   .sort((a, b) => {
     const ad = (a.data.updatedDate ?? a.data.pubDate).valueOf();
@@ -34,16 +53,17 @@ const posts = (await getCollection('blog'))
     return bd - ad;
   });
 
+// ✅ 过滤：用 slugify 对比 tagSlug
 const tagPosts = posts.filter((p) => {
-  const tags = (p.data.tags ?? []).map((x) => String(x).trim());
-  return tags.includes(tag);
+  const list = (p.data.tags ?? []).map((x) => slugify(String(x).trim()));
+  return list.includes(tagSlug);
 });
 ---
 
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <BaseHead title={`${tag} | Tags | ${SITE_TITLE}`} description={`标签：${tag}`} />
+    <BaseHead title={`${tag} | Tag | ${SITE_TITLE}`} description={`标签：${tag}`} />
     <style>
       main { width: 960px; }
       .back {
@@ -76,7 +96,7 @@ const tagPosts = posts.filter((p) => {
       {tagPosts.length > 0 ? (
         <ul class="list">
           {tagPosts.map((post) => (
-            <PostCard post={post} showTags={true} currentTag={tag} />
+            <PostCard post={post} showTags={true} />
           ))}
         </ul>
       ) : (
