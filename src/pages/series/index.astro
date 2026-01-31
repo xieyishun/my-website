@@ -54,15 +54,63 @@ const seriesSlugMap = buildSlugMap(seriesList.map((s) => s.name));
 <html lang="zh-CN">
 	<head>
 		<BaseHead title={`Series | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
-		<style>
-			main { width: 960px; }
-			.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
-			.card { padding: 1rem; border: 1px solid #e0e0e0; border-radius: 8px; text-decoration: none; color: inherit; }
-			.card:hover { border-color: #333; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
-			.title { margin: 0 0 .25rem 0; font-weight: 600; }
-			.meta { color: #666; font-size: .9rem; }
-			@media (max-width: 720px) { main { width: 100%; } }
-		</style>
+	<style>
+ 	 main { width: 960px; }
+
+ 	 .list {
+  	  list-style: none;
+   	 margin: 0;
+	 padding: 0;
+     display: grid;
+     gap: 1rem;
+     }
+
+  	 .card {
+     padding: 1rem;
+     border: 1px solid #e0e0e0;
+     border-radius: 8px;
+     text-decoration: none;
+     color: inherit;
+     display: block;
+  	 }
+
+   	 .card:hover {
+     border-color: #333;
+     box-shadow: 0 4px 12px rgba(0,0,0,.08);
+     }
+
+    .title {
+     margin: 0 0 .25rem 0;
+     font-weight: 600;
+     }
+
+    .meta {
+     color: #666;
+     font-size: .9rem;
+     }
+
+     @media (max-width: 720px) {
+     main { width: 100%; }
+     }
+
+  /* ============================================================
+     ✅ 修复：禁用全局 ul/li “时间线/括号” 样式对专题列表的污染
+     ============================================================ */
+
+  /* 取消全局可能给 li 的 padding/relative */
+     .list > li {
+     position: static !important;
+     padding-left: 0 !important;
+     margin-left: 0 !important;
+     }
+
+  /* 禁用全局可能加在 li 上的装饰伪元素（左侧竖线/括号） */
+     .list > li::before,
+     .list > li::after {
+     content: none !important;
+     display: none !important;
+  		}
+	</style>
 	</head>
 	<body>
 		<Header />
