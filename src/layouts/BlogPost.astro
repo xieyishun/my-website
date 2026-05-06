@@ -4,48 +4,89 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
+import Toc from '../components/Toc.astro';
+import RelatedPosts from '../components/RelatedPosts.astro';
 import { withBase } from '../utils/url';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { formatReadingTime } from '../utils/reading-time';
 
 type BlogPost = CollectionEntry<'blog'>;
 
-interface Props {
-  // ✅ 允许不传（因为你有页面复用了这个 layout）
-  post?: BlogPost;
-  title?: string;
-  description?: string;
+interface RelatedItem {
+  post: BlogPost;
+  score: number;
+  shared: { series: string[]; tags: string[]; sameGame: boolean };
 }
 
-const { post, title, description } = Astro.props;
+interface Heading { depth: number; slug: string; text: string }
 
-// ✅ 非文章页兜底：给普通页面一个合理 title/description
-const pageTitle = post?.data?.title
-  ? `${post.data.title} | ${SITE_TITLE}`
-  : title
-  ? `${title} | ${SITE_TITLE}`
-  : SITE_TITLE;
+interface Props {
+  // 旧用法兼容
+  post?: BlogPost;
+  // 新用法（[...slug].astro 用 spread + 额外字段传入）
+  title?: string;
+  description?: string;
+  summary?: string;
+  pubDate?: Date;
+  updatedDate?: Date;
+  type?: string;
+  game?: string;
+  region?: string[];
+  series?: string[];
+  tags?: string[];
+  image?: string;
+  imageAlt?: string;
+  // 新增：阅读时长 / 目录 / 相关文章
+  headings?: Heading[];
+  readingMinutes?: number;
+  related?: RelatedItem[];
+}
 
-const pageDesc =
-  (post ? (String((post.data as any).summary ?? '').trim() || String((post.data as any).description ?? '').trim()) : '') ||
-  (description ?? '') ||
-  SITE_DESCRIPTION;
+const props = Astro.props;
+const {
+  post,
+  headings = [],
+  readingMinutes,
+  related = [],
+} = props;
 
-// ✅ canonical：文章页用 /blog/slug/；普通页用当前 URL
+// title / description（兼容老用法）
+const dataTitle = post?.data?.title ?? props.title;
+const dataDescription = post
+  ? (String((post.data as any).summary ?? '').trim() || String((post.data as any).description ?? '').trim())
+  : (String(props.summary ?? '').trim() || String(props.description ?? '').trim());
+
+const pageTitle = dataTitle ? `${dataTitle} | ${SITE_TITLE}` : SITE_TITLE;
+const pageDesc = dataDescription || SITE_DESCRIPTION;
+
 const canonical = post?.id
   ? new URL(withBase(`/blog/${post.id}/`), Astro.site).toString()
   : (Astro.url ? Astro.url.toString() : undefined);
 
-// ✅ 封面图（仅文章页）
-const cover = post ? String((post.data as any).image ?? '').trim() : '';
+// 是否是文章页（有 title + pubDate 即视为文章页，可显示头部 / TOC / 相关）
+const isArticle = !!(dataTitle && (post?.data?.pubDate || props.pubDate));
+
+const articleTitle = dataTitle ?? '';
+const articlePubDate = post?.data?.pubDate ?? props.pubDate;
+const articleUpdatedDate = post?.data?.updatedDate ?? props.updatedDate;
+const articleDesc = post
+  ? String((post.data as any).description ?? '').trim()
+  : String(props.description ?? '').trim();
+
+// 封面图
+const cover = post
+  ? String((post.data as any).image ?? '').trim()
+  : String(props.image ?? '').trim();
 const coverAlt = post
   ? ((post.data as any).imageAlt ? String((post.data as any).imageAlt).trim() : String(post.data.title ?? '').trim())
-  : '';
+  : (String(props.imageAlt ?? '').trim() || articleTitle);
 
 const isHttp = (s: string) => s.startsWith('http://') || s.startsWith('https://');
-const coverSrc =
-  cover
-    ? (isHttp(cover) ? cover : withBase(cover.startsWith('/') ? cover : `/${cover}`))
-    : '';
+const coverSrc = cover
+  ? (isHttp(cover) ? cover : withBase(cover.startsWith('/') ? cover : `/${cover}`))
+  : '';
+
+const hasToc = headings.filter((h) => h.depth >= 2 && h.depth <= 3).length > 0;
 ---
 
 <!doctype html>
@@ -60,48 +101,61 @@ const coverSrc =
     <Header />
 
     <main id="main-content" class="wrap">
-      {post ? (
-        <article class="post">
-          {coverSrc && (
-            <div class="cover-wrap">
-              <div class="cover">
-                <img
-                  class="cover-img"
-                  src={coverSrc}
-                  alt={coverAlt}
-                  loading="eager"
-                  decoding="async"
-                />
+      {isArticle ? (
+        <div class={`post-layout ${hasToc ? 'has-toc' : ''}`}>
+          <article class="post">
+            {coverSrc && (
+              <div class="cover-wrap">
+                <div class="cover">
+                  <img class="cover-img" src={coverSrc} alt={coverAlt} loading="eager" decoding="async" />
+                </div>
               </div>
+            )}
+
+            <header class="post-header">
+              <h1 class="title">{articleTitle}</h1>
+
+              <div class="meta">
+                {articlePubDate && (
+                  <span class="date">
+                    <FormattedDate date={articlePubDate} />
+                  </span>
+                )}
+
+                {articleUpdatedDate && (
+                  <span class="updated">
+                    更新于 <FormattedDate date={articleUpdatedDate} />
+                  </span>
+                )}
+
+                {readingMinutes && (
+                  <span class="reading">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    {formatReadingTime(readingMinutes)}
+                  </span>
+                )}
+              </div>
+
+              {articleDesc && <p class="desc">{articleDesc}</p>}
+            </header>
+
+            <div class="content">
+              <slot />
+            </div>
+
+            {related.length > 0 && <RelatedPosts items={related} />}
+          </article>
+
+          {hasToc && (
+            <div class="toc-col">
+              <Toc headings={headings} />
             </div>
           )}
-
-          <header class="post-header">
-            <h1 class="title">{post.data.title}</h1>
-
-            <div class="meta">
-              <span class="date">
-                <FormattedDate date={post.data.pubDate} />
-              </span>
-
-              {post.data.updatedDate && (
-                <span class="updated">
-                  更新于 <FormattedDate date={post.data.updatedDate} />
-                </span>
-              )}
-            </div>
-
-            {(post.data as any).description && (
-              <p class="desc">{String((post.data as any).description)}</p>
-            )}
-          </header>
-
-          <div class="content">
-            <slot />
-          </div>
-        </article>
+        </div>
       ) : (
-        // ✅ 普通页面：仅渲染内容（不依赖 post）
         <div class="page">
           <slot />
         </div>
@@ -110,24 +164,51 @@ const coverSrc =
 
     <Footer />
 
-    <style>
+    <style is:global>
       .wrap {
         width: 960px;
+        max-width: calc(100% - 2em);
         margin: 0 auto;
         padding: 2rem 0;
       }
 
       @media (max-width: 960px) {
-        .wrap {
-          width: 100%;
-          padding: 1.25rem 1rem;
+        .wrap { width: 100%; padding: 1.25rem 1rem; }
+      }
+
+      /* 文章 + TOC 双栏布局（仅 >=1100px 启用） */
+      .post-layout { display: block; }
+
+      @media (min-width: 1100px) {
+        .post-layout.has-toc {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 220px;
+          gap: 2.5rem;
+          /* 注意：不要设 align-items: start，否则 grid 单元格不会拉伸到与文章同高，sticky 就无空间可粘 */
+        }
+        .toc-col {
+          /* 让 sticky 在 grid 单元格内生效 */
+          position: sticky;
+          top: 80px;
+          align-self: start;
+          max-height: calc(100vh - 100px);
+          overflow-y: auto;
+          /* 让滚动条精致一些 */
+          scrollbar-width: thin;
+        }
+        .toc-col::-webkit-scrollbar {
+          width: 6px;
+        }
+        .toc-col::-webkit-scrollbar-thumb {
+          background: rgba(var(--gray), 0.3);
+          border-radius: 3px;
         }
       }
 
-      /* ✅ 封面：预留尺寸，减少 CLS */
-      .cover-wrap {
-        margin: 0 0 1.25rem 0;
-      }
+      .toc-col { min-width: 0; }
+
+      /* 封面 */
+      .cover-wrap { margin: 0 0 1.25rem 0; }
       .cover {
         width: 100%;
         border-radius: 16px;
@@ -142,9 +223,7 @@ const coverSrc =
         display: block;
       }
 
-      .post-header {
-        margin-bottom: 1.5rem;
-      }
+      .post-header { margin-bottom: 1.5rem; }
 
       .title {
         margin: 0 0 0.75rem 0;
@@ -158,7 +237,22 @@ const coverSrc =
         gap: 0.9rem;
         color: #666;
         font-size: 0.95rem;
+        align-items: center;
       }
+
+      .reading {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.15rem 0.55rem;
+        background: rgba(35, 55, 255, 0.08);
+        color: var(--accent-dark);
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      .reading svg { color: var(--accent); }
 
       .desc {
         margin: 0.9rem 0 0 0;
@@ -167,8 +261,12 @@ const coverSrc =
         line-height: 1.7;
       }
 
-      .content :global(p) {
-        line-height: 1.9;
+      .content :global(p) { line-height: 1.9; }
+
+      /* 给文章里所有 h2/h3 加 scroll-margin-top，让锚点跳转不被 fixed header 挡住 */
+      .content :global(h2),
+      .content :global(h3) {
+        scroll-margin-top: 80px;
       }
     </style>
   </body>

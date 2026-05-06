@@ -2,6 +2,7 @@
 import type { CollectionEntry } from 'astro:content';
 import FormattedDate from './FormattedDate.astro';
 import { withBase } from '../utils/url';
+import { estimateReadingMinutes } from '../utils/reading-time';
 
 type TypeValue = 'note' | 'analysis' | 'report';
 
@@ -46,6 +47,8 @@ const tags = showTags ? tagsAll.slice(0, maxTags) : [];
 const summary = (post.data.summary ?? '').trim();
 const desc = (post.data.description ?? '').trim();
 const excerpt = showSummary ? (summary || desc) : desc;
+
+const readingMinutes = estimateReadingMinutes((post as any).body ?? '');
 
 const href = withBase(`/blog/${post.id}/`);
 
@@ -101,6 +104,13 @@ const coverSrc = cover
         更新于 <FormattedDate date={post.data.updatedDate} />
       </span>
     )}
+    <span class="post-reading">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      约 {readingMinutes} 分钟
+    </span>
   </div>
 
   <div class="post-badges">
@@ -250,6 +260,19 @@ const coverSrc = cover
     color: #666;
     font-size: 0.9rem;
   }
+
+  .post-reading {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--accent-dark);
+    font-size: 0.85rem;
+  }
+
+  .post-reading svg {
+    color: var(--accent);
+  }
+
 
   .post-badges {
     display: flex;

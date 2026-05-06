@@ -1,0 +1,226 @@
+---
+// 文章目录组件 — 依赖 Astro 的 render(post).headings
+// 自动取 H2 + H3，桌面右侧 sticky，移动端折叠
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+}
+
+const { headings } = Astro.props;
+
+// 只展示 h2 / h3
+const items = (headings ?? []).filter((h) => h.depth >= 2 && h.depth <= 3);
+---
+
+{items.length > 0 && (
+  <aside class="toc" aria-label="文章目录">
+    <details class="toc-mobile" open>
+      <summary>
+        <span class="toc-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+        </span>
+        目录
+      </summary>
+      <nav class="toc-nav">
+        <ul class="toc-list">
+          {items.map((h) => (
+            <li class={`toc-item depth-${h.depth}`}>
+              <a class="toc-link" href={`#${h.slug}`} data-toc-link={h.slug}>{h.text}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </details>
+  </aside>
+)}
+
+<script is:inline>
+  (function () {
+    const links = Array.from(document.querySelectorAll('[data-toc-link]'));
+    if (!links.length) return;
+
+    const slugMap = new Map();
+    links.forEach((a) => slugMap.set(a.getAttribute('data-toc-link'), a));
+
+    const targets = links
+      .map((a) => document.getElementById(a.getAttribute('data-toc-link')))
+      .filter(Boolean);
+
+    if (!targets.length) return;
+
+    let current = null;
+
+    // 找到 TOC 自己的滚动容器（>=1100px 时是 .toc-col；移动端是 .toc-nav 或不需要滚）
+    const findScrollContainer = (el) => {
+      let p = el.parentElement;
+      while (p && p !== document.body) {
+        const oy = getComputedStyle(p).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight) {
+          return p;
+        }
+        p = p.parentElement;
+      }
+      return null;
+    };
+
+    const scrollLinkIntoTocView = (link) => {
+      const container = findScrollContainer(link);
+      if (!container) return;
+      const cRect = container.getBoundingClientRect();
+      const lRect = link.getBoundingClientRect();
+      const padding = 40;
+
+      if (lRect.top < cRect.top + padding) {
+        // 当前项在 TOC 可视区上方 → 向上滚一点把它显示出来
+        container.scrollBy({
+          top: lRect.top - cRect.top - padding,
+          behavior: 'smooth',
+        });
+      } else if (lRect.bottom > cRect.bottom - padding) {
+        // 当前项在 TOC 可视区下方 → 向下滚一点
+        container.scrollBy({
+          top: lRect.bottom - cRect.bottom + padding,
+          behavior: 'smooth',
+        });
+      }
+    };
+
+    const setActive = (slug) => {
+      if (current === slug) return;
+      current = slug;
+      links.forEach((a) => a.classList.remove('toc-active'));
+      const el = slugMap.get(slug);
+      if (el) {
+        el.classList.add('toc-active');
+        scrollLinkIntoTocView(el);
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // 选取离 viewport 顶部最近且仍在视野内的标题
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length > 0) {
+          setActive(visible[0].target.id);
+        }
+      },
+      { rootMargin: '-80px 0px -70% 0px', threshold: [0, 1] }
+    );
+
+    targets.forEach((t) => observer.observe(t));
+
+    // 平滑滚动
+    links.forEach((a) => {
+      a.addEventListener('click', (e) => {
+        const slug = a.getAttribute('data-toc-link');
+        const target = document.getElementById(slug);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          history.replaceState(null, '', '#' + slug);
+        }
+      });
+    });
+  })();
+</script>
+
+<style is:global>
+  .toc {
+    font-size: 0.9rem;
+  }
+
+  /* 桌面：靠右、左侧加竖线（sticky 在父级 .toc-col 上做） */
+  @media (min-width: 1100px) {
+    .toc {
+      padding: 0.5rem 0.75rem;
+      border-left: 2px solid rgba(var(--gray-light), 1);
+    }
+    .toc-mobile > summary {
+      display: none;
+    }
+    .toc-mobile {
+      pointer-events: auto;
+    }
+  }
+
+  /* 移动 / 平板：可折叠 */
+  @media (max-width: 1099px) {
+    .toc {
+      margin: 0 0 1.25rem 0;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(var(--gray-light), 1);
+      border-radius: 12px;
+      background: #fafbff;
+    }
+    .toc-mobile > summary {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      list-style: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: rgb(var(--gray-dark));
+    }
+    .toc-mobile > summary::-webkit-details-marker {
+      display: none;
+    }
+    .toc-mobile[open] > summary {
+      margin-bottom: 0.6rem;
+    }
+  }
+
+  .toc-icon {
+    display: inline-flex;
+    color: var(--accent);
+  }
+
+  .toc-nav {
+    overflow: hidden;
+  }
+
+  .toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .toc-item {
+    line-height: 1.5;
+    margin: 0.2rem 0;
+  }
+
+  .toc-item.depth-3 {
+    padding-left: 0.95rem;
+    font-size: 0.85rem;
+  }
+
+  .toc-link {
+    display: block;
+    padding: 0.25rem 0.5rem;
+    color: rgb(var(--gray));
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    border-radius: 0 6px 6px 0;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    word-break: break-word;
+  }
+
+  .toc-link:hover {
+    color: rgb(var(--gray-dark));
+    background: rgba(var(--gray-light), 0.5);
+  }
+
+  .toc-link.toc-active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(35, 55, 255, 0.06);
+    font-weight: 600;
+  }
+</style>
