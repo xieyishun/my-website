@@ -1,0 +1,86 @@
+---
+// 几何头像：圆形渐变背景 + "刀" 字 + 数据风格的小装饰点阵
+// 使用 site accent 色系 (#2337ff -> #000d8a)
+// size: 头像直径 (px)
+interface Props {
+  size?: number;
+  ariaLabel?: string;
+  class?: string;
+}
+const { size = 96, ariaLabel = '刀刀的头像', class: className = '' } = Astro.props;
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 120 120"
+  width={size}
+  height={size}
+  role="img"
+  aria-label={ariaLabel}
+  class={`avatar-svg ${className}`}
+>
+  <defs>
+    <linearGradient id="avatar-bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3a4dff" />
+      <stop offset="100%" stop-color="#000d8a" />
+    </linearGradient>
+    <linearGradient id="avatar-accent-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- 圆形主背景 -->
+  <circle cx="60" cy="60" r="58" fill="url(#avatar-bg-grad)" />
+
+  <!-- 高光弧 -->
+  <path
+    d="M 12 60 a 48 48 0 0 1 96 0"
+    fill="none"
+    stroke="url(#avatar-accent-grad)"
+    stroke-width="2"
+  />
+
+  <!-- 数据点阵装饰（左上 / 右下） -->
+  <g fill="#ffffff" opacity="0.35">
+    <circle cx="22" cy="28" r="1.6" />
+    <circle cx="30" cy="24" r="1.6" />
+    <circle cx="30" cy="32" r="1.6" />
+    <circle cx="38" cy="28" r="1.6" />
+
+    <circle cx="84" cy="92" r="1.6" />
+    <circle cx="92" cy="88" r="1.6" />
+    <circle cx="92" cy="96" r="1.6" />
+    <circle cx="100" cy="92" r="1.6" />
+  </g>
+
+  <!-- "刀" 字 -->
+  <text
+    x="60"
+    y="60"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif"
+    font-size="56"
+    font-weight="600"
+    fill="#ffffff"
+    style="letter-spacing: -0.02em;"
+  >刀</text>
+
+  <!-- 右下角微小三角点缀（呼应"刀刃"的几何感） -->
+  <polygon
+    points="98,18 108,22 102,30"
+    fill="#ffffff"
+    opacity="0.55"
+  />
+</svg>
+
+<style>
+  .avatar-svg {
+    display: block;
+    border-radius: 50%;
+    box-shadow:
+      0 6px 20px rgba(35, 55, 255, 0.25),
+      0 2px 6px rgba(0, 13, 138, 0.15);
+  }
+</style>

@@ -5,21 +5,20 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import PostCard from '../components/PostCard.astro';
 import FormattedDate from '../components/FormattedDate.astro';
+import Avatar from '../components/Avatar.astro';
+import SocialLinks from '../components/SocialLinks.astro';
 import { withBase } from '../utils/url';
 import { slugify } from '../utils/slug';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import '../styles/home.css';
 
-// ✅ 先复制再排序，避免 getCollection 返回数组被“就地排序”带来潜在副作用
 const posts = (await getCollection('blog'))
 	.slice()
 	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
-// ✅ “最新更新”：updatedDate 优先，否则 fallback pubDate
 const getUpdateTime = (post: (typeof posts)[number]) =>
 	(post.data.updatedDate ?? post.data.pubDate).valueOf();
 
-// ✅ 最新更新列表取前 5（按 updateTime 排）
 const latestPosts = posts
 	.slice()
 	.sort((a, b) => getUpdateTime(b) - getUpdateTime(a))
@@ -28,7 +27,7 @@ const latestPosts = posts
 type SeriesItem = {
 	name: string;
 	count: number;
-	latestDate: Date; // ✅ 用 updatedDate 优先
+	latestDate: Date;
 };
 
 const seriesMap = new Map<string, SeriesItem>();
@@ -41,17 +40,11 @@ posts.forEach((post) => {
 	seriesList.forEach((name) => {
 		const existing = seriesMap.get(name);
 		if (!existing) {
-			seriesMap.set(name, {
-				name,
-				count: 1,
-				latestDate: effectiveDate,
-			});
+			seriesMap.set(name, { name, count: 1, latestDate: effectiveDate });
 			return;
 		}
 		existing.count += 1;
-		if (effectiveDate > existing.latestDate) {
-			existing.latestDate = effectiveDate;
-		}
+		if (effectiveDate > existing.latestDate) existing.latestDate = effectiveDate;
 	});
 
 	const tags = post.data.tags ?? [];
@@ -74,6 +67,16 @@ const topTags = Array.from(tagMap.entries())
 		return a.name.localeCompare(b.name, 'zh-CN');
 	})
 	.slice(0, 12);
+
+const totalPosts = posts.length;
+const totalSeries = seriesMap.size;
+const totalTags = tagMap.size;
+
+const nowItems = [
+	{ label: '在学', value: 'Godot', emoji: '🎮' },
+	{ label: '在拆', value: 'Deadlock', emoji: '🔍' },
+	{ label: '在读', value: '商业数据分析', emoji: '📚' },
+];
 ---
 
 <!doctype html>
@@ -85,14 +88,89 @@ const topTags = Array.from(tagMap.entries())
 		<Header />
 		<main id="main-content">
 			<section class="hero">
-				<h1>{SITE_TITLE}</h1>
-				<p>{SITE_DESCRIPTION}</p>
+				<div class="hero-bg" aria-hidden="true">
+					<div class="hero-blob hero-blob-1"></div>
+					<div class="hero-blob hero-blob-2"></div>
+					<div class="hero-grid-bg"></div>
+				</div>
+				<div class="hero-grid">
+					<div class="hero-text">
+						<p class="eyebrow fade-in" style="--delay: 0ms;">
+							<span class="dot" aria-hidden="true"></span>
+							Hi, 我是刀刀 · 数据 × 游戏
+						</p>
+
+						<h1 class="hero-title">
+							<span class="title-line">用数据视角，</span>
+							<span class="title-line title-accent">
+								<span id="typewriter" class="typewriter" data-text="拆解游戏。">拆解游戏。</span><span class="caret" aria-hidden="true"></span>
+							</span>
+						</h1>
+
+						<p class="hero-sub fade-in" style="--delay: 600ms;">
+							商业数据分析研究生 · 关注游戏运营、版本拆解与增长闭环。
+							这里记录我从数据视角看游戏的过程。
+						</p>
+
+						<div class="hero-cta fade-in" style="--delay: 800ms;">
+							<a class="btn btn-primary" href={withBase('/blog/')}>
+								阅读博客
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M5 12h14" /><path d="m13 6 6 6-6 6" />
+								</svg>
+							</a>
+							<a class="btn btn-ghost" href={withBase('/about/')}>关于我</a>
+							<SocialLinks class="hero-socials" />
+						</div>
+
+						<div class="hero-stats fade-in" style="--delay: 1000ms;">
+							<div class="stat">
+								<div class="stat-num">{totalPosts}</div>
+								<div class="stat-label">篇文章</div>
+							</div>
+							<div class="stat-divider" aria-hidden="true"></div>
+							<div class="stat">
+								<div class="stat-num">{totalSeries}</div>
+								<div class="stat-label">个专题</div>
+							</div>
+							<div class="stat-divider" aria-hidden="true"></div>
+							<div class="stat">
+								<div class="stat-num">{totalTags}</div>
+								<div class="stat-label">个标签</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="hero-avatar fade-in" style="--delay: 200ms;">
+						<div class="avatar-halo" aria-hidden="true"></div>
+						<Avatar size={170} />
+					</div>
+				</div>
+			</section>
+
+			<section class="now-section fade-in" style="--delay: 1200ms;">
+				<div class="now-header">
+					<h2 class="now-title">
+						<span class="now-pulse" aria-hidden="true"></span>
+						Now · 最近在做
+					</h2>
+					<span class="now-hint">这是一个 <a href="https://nownownow.com/about" target="_blank" rel="noopener noreferrer">/now</a> 区块</span>
+				</div>
+				<ul class="now-grid">
+					{nowItems.map((item) => (
+						<li class="now-card">
+							<div class="now-emoji" aria-hidden="true">{item.emoji}</div>
+							<div class="now-label">{item.label}</div>
+							<div class="now-value">{item.value}</div>
+						</li>
+					))}
+				</ul>
 			</section>
 
 			<section class="section">
 				<div class="section-header">
 					<h2 class="section-title">最新更新</h2>
-					<a class="section-link" href={withBase('/blog/')}>查看全部</a>
+					<a class="section-link" href={withBase('/blog/')}>查看全部 →</a>
 				</div>
 				{latestPosts.length > 0 ? (
 					<ul class="posts-list">
@@ -108,20 +186,15 @@ const topTags = Array.from(tagMap.entries())
 			<section class="section">
 				<div class="section-header">
 					<h2 class="section-title">专题 Series</h2>
-					<a class="section-link" href={withBase('/series/')}>查看全部专题</a>
+					<a class="section-link" href={withBase('/series/')}>查看全部专题 →</a>
 				</div>
 				{topSeries.length > 0 ? (
 					<div class="series-grid">
 						{topSeries.map((item) => (
-							<a
-								class="series-card"
-								href={withBase(`/series/${slugify(item.name)}/`)}
-							>
+							<a class="series-card" href={withBase(`/series/${slugify(item.name)}/`)}>
 								<div class="card-title">{item.name}</div>
 								<div class="card-meta">{item.count} 篇文章</div>
-								<div class="card-meta">
-									最近更新：<FormattedDate date={item.latestDate} />
-								</div>
+								<div class="card-meta">最近更新：<FormattedDate date={item.latestDate} /></div>
 							</a>
 						))}
 					</div>
@@ -133,15 +206,12 @@ const topTags = Array.from(tagMap.entries())
 			<section class="section">
 				<div class="section-header">
 					<h2 class="section-title">标签 Tags</h2>
-					<a class="section-link" href={withBase('/tags/')}>查看全部标签</a>
+					<a class="section-link" href={withBase('/tags/')}>查看全部标签 →</a>
 				</div>
 				{topTags.length > 0 ? (
 					<div class="tags-grid">
 						{topTags.map((tag) => (
-							<a
-								class="tag-card"
-								href={withBase(`/tags/${slugify(tag.name)}/`)}
-							>
+							<a class="tag-card" href={withBase(`/tags/${slugify(tag.name)}/`)}>
 								<div class="card-title">{tag.name}</div>
 								<div class="card-meta">{tag.count} 篇文章</div>
 							</a>
@@ -153,5 +223,27 @@ const topTags = Array.from(tagMap.entries())
 			</section>
 		</main>
 		<Footer />
+
+		<script is:inline>
+			(function () {
+				const el = document.getElementById('typewriter');
+				if (!el) return;
+				const text = el.dataset.text || el.textContent || '';
+				const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+				if (reduceMotion) { el.textContent = text; return; }
+				el.textContent = '';
+				const chars = Array.from(text);
+				let i = 0;
+				const startDelay = 400;
+				const charDelay = 90;
+				function step() {
+					if (i >= chars.length) return;
+					el.textContent += chars[i];
+					i++;
+					setTimeout(step, charDelay);
+				}
+				setTimeout(step, startDelay);
+			})();
+		</script>
 	</body>
 </html>
